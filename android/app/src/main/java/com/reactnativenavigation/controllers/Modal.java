@@ -7,6 +7,7 @@ import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.view.KeyEvent;
+import android.view.MotionEvent;
 import android.view.Window;
 import android.view.WindowManager;
 
@@ -90,6 +91,14 @@ class Modal extends Dialog implements DialogInterface.OnDismissListener, ScreenS
             onBackPressed();
         }
         return true;
+    }
+
+    @Override
+    public boolean dispatchTouchEvent(@NonNull MotionEvent ev) {
+        if (ev.getAction() == MotionEvent.ACTION_DOWN) {
+            NavigationApplication.instance.getEventEmitter().sendEvent("touchDetected");
+        }
+        return super.dispatchTouchEvent(ev);
     }
 
     public void onSideMenuButtonClick() {

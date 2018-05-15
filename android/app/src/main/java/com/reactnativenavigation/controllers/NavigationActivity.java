@@ -221,6 +221,12 @@ public class NavigationActivity extends AppCompatActivity implements DefaultHard
     }
 
     @Override
+    public void onUserInteraction() {
+        super.onUserInteraction();
+        NavigationApplication.instance.getEventEmitter().sendEvent("touchDetected");
+    }
+
+    @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         getReactGateway().onActivityResult(requestCode, resultCode, data);
         NavigationApplication.instance.getActivityCallbacks().onActivityResult(requestCode, resultCode, data);
