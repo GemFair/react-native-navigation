@@ -221,9 +221,11 @@ public class NavigationActivity extends AppCompatActivity implements DefaultHard
     }
 
     @Override
-    public void onUserInteraction() {
-        super.onUserInteraction();
-        NavigationApplication.instance.getEventEmitter().sendEvent("touchDetected");
+    public boolean dispatchTouchEvent(@NonNull MotionEvent ev) {
+        if (ev.getAction() == MotionEvent.ACTION_DOWN) {
+            NavigationApplication.instance.getEventEmitter().sendEvent("touchDetected");
+        }
+        return super.dispatchTouchEvent(ev);
     }
 
     @Override
