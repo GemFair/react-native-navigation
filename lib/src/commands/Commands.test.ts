@@ -22,33 +22,40 @@ describe('Commands', () => {
       mockCommandsSender,
       new LayoutTreeParser(),
       new LayoutTreeCrawler(new UniqueIdProvider(), store),
-      commandsObserver
+      commandsObserver,
+      new UniqueIdProvider()
     );
   });
 
   describe('setRoot', () => {
     it('sends setRoot to native after parsing into a correct layout tree', () => {
       uut.setRoot({
-        component: {
-          name: 'com.example.MyScreen'
+        root: {
+          component: {
+            name: 'com.example.MyScreen'
+          }
         }
       });
       expect(mockCommandsSender.setRoot).toHaveBeenCalledTimes(1);
-      expect(mockCommandsSender.setRoot).toHaveBeenCalledWith({
-        type: 'Component',
-        id: 'Component+UNIQUE_ID',
-        children: [],
-        data: {
-          name: 'com.example.MyScreen',
-          options: {}
-        }
+      expect(mockCommandsSender.setRoot).toHaveBeenCalledWith('setRoot+UNIQUE_ID', {
+        root: {
+          type: 'Component',
+          id: 'Component+UNIQUE_ID',
+          children: [],
+          data: {
+            name: 'com.example.MyScreen',
+            options: {}
+          }
+        },
+        modals: [],
+        overlays: []
       });
     });
 
     it('deep clones input to avoid mutation errors', () => {
       const obj = {};
-      uut.setRoot({ component: { name: 'bla', inner: obj } });
-      expect(mockCommandsSender.setRoot.mock.calls[0][0].data.inner).not.toBe(obj);
+      uut.setRoot({ root: { component: { name: 'bla', inner: obj } } });
+      expect(mockCommandsSender.setRoot.mock.calls[0][1].root.data.inner).not.toBe(obj);
     });
 
     it('passProps into components', () => {
@@ -56,29 +63,88 @@ describe('Commands', () => {
         fn: () => 'Hello'
       };
       expect(store.getPropsForId('Component+UNIQUE_ID')).toEqual({});
-      uut.setRoot({ component: { name: 'asd', passProps } });
+      uut.setRoot({ root: { component: { name: 'asd', passProps } } });
       expect(store.getPropsForId('Component+UNIQUE_ID')).toEqual(passProps);
       expect(store.getPropsForId('Component+UNIQUE_ID').fn()).toEqual('Hello');
     });
 
     it('returns a promise with the resolved layout', async () => {
       mockCommandsSender.setRoot.mockReturnValue(Promise.resolve('the resolved layout'));
-      const result = await uut.setRoot({ component: { name: 'com.example.MyScreen' } });
+      const result = await uut.setRoot({ root: { component: { name: 'com.example.MyScreen' } } });
       expect(result).toEqual('the resolved layout');
+    });
+
+    it('inputs modals and overlays', () => {
+      uut.setRoot({
+        root: {
+          component: {
+            name: 'com.example.MyScreen'
+          }
+        },
+        modals: [
+          {
+            component: {
+              name: 'com.example.MyModal'
+            }
+          }
+        ],
+        overlays: [
+          {
+            component: {
+              name: 'com.example.MyOverlay'
+            }
+          }
+        ]
+      });
+      expect(mockCommandsSender.setRoot).toHaveBeenCalledTimes(1);
+      expect(mockCommandsSender.setRoot).toHaveBeenCalledWith('setRoot+UNIQUE_ID', {
+        root:
+          {
+            type: 'Component',
+            id: 'Component+UNIQUE_ID',
+            children: [],
+            data: {
+              name: 'com.example.MyScreen',
+              options: {}
+            }
+          },
+        modals: [
+          {
+            type: 'Component',
+            id: 'Component+UNIQUE_ID',
+            children: [],
+            data: {
+              name: 'com.example.MyModal',
+              options: {}
+            }
+          }
+        ],
+        overlays: [
+          {
+            type: 'Component',
+            id: 'Component+UNIQUE_ID',
+            children: [],
+            data: {
+              name: 'com.example.MyOverlay',
+              options: {}
+            }
+          }
+        ]
+      });
     });
   });
 
-  describe('setOptions', () => {
+  describe('mergeOptions', () => {
     it('deep clones input to avoid mutation errors', () => {
       const obj = { title: 'test' };
-      uut.setOptions('theComponentId', obj);
-      expect(mockCommandsSender.setOptions.mock.calls[0][1]).not.toBe(obj);
+      uut.mergeOptions('theComponentId', obj);
+      expect(mockCommandsSender.mergeOptions.mock.calls[0][1]).not.toBe(obj);
     });
 
     it('passes options for component', () => {
-      uut.setOptions('theComponentId', { title: '1' });
-      expect(mockCommandsSender.setOptions).toHaveBeenCalledTimes(1);
-      expect(mockCommandsSender.setOptions).toHaveBeenCalledWith('theComponentId', { title: '1' });
+      uut.mergeOptions('theComponentId', { title: '1' });
+      expect(mockCommandsSender.mergeOptions).toHaveBeenCalledTimes(1);
+      expect(mockCommandsSender.mergeOptions).toHaveBeenCalledWith('theComponentId', { title: '1' });
     });
   });
 
@@ -98,7 +164,7 @@ describe('Commands', () => {
         }
       });
       expect(mockCommandsSender.showModal).toHaveBeenCalledTimes(1);
-      expect(mockCommandsSender.showModal).toHaveBeenCalledWith({
+      expect(mockCommandsSender.showModal).toHaveBeenCalledWith('showModal+UNIQUE_ID', {
         type: 'Component',
         id: 'Component+UNIQUE_ID',
         data: {
@@ -112,7 +178,7 @@ describe('Commands', () => {
     it('deep clones input to avoid mutation errors', () => {
       const obj = {};
       uut.showModal({ component: { name: 'name', inner: obj } });
-      expect(mockCommandsSender.showModal.mock.calls[0][0].data.inner).not.toBe(obj);
+      expect(mockCommandsSender.showModal.mock.calls[0][1].data.inner).not.toBe(obj);
     });
 
     it('passProps into components', () => {
@@ -138,7 +204,7 @@ describe('Commands', () => {
     it('sends command to native', () => {
       uut.dismissModal('myUniqueId');
       expect(mockCommandsSender.dismissModal).toHaveBeenCalledTimes(1);
-      expect(mockCommandsSender.dismissModal).toHaveBeenCalledWith('myUniqueId');
+      expect(mockCommandsSender.dismissModal).toHaveBeenCalledWith('dismissModal+UNIQUE_ID', 'myUniqueId');
     });
 
     it('returns a promise with the id', async () => {
@@ -152,7 +218,7 @@ describe('Commands', () => {
     it('sends command to native', () => {
       uut.dismissAllModals();
       expect(mockCommandsSender.dismissAllModals).toHaveBeenCalledTimes(1);
-      expect(mockCommandsSender.dismissAllModals).toHaveBeenCalledWith();
+      expect(mockCommandsSender.dismissAllModals).toHaveBeenCalledWith('dismissAllModals+UNIQUE_ID');
     });
 
     it('returns a promise with the id', async () => {
@@ -166,7 +232,7 @@ describe('Commands', () => {
     it('deep clones input to avoid mutation errors', () => {
       const obj = {};
       uut.push('theComponentId', { component: { name: 'name', passProps: { foo: obj } } });
-      expect(mockCommandsSender.push.mock.calls[0][1].data.passProps.foo).not.toBe(obj);
+      expect(mockCommandsSender.push.mock.calls[0][2].data.passProps.foo).not.toBe(obj);
     });
 
     it('resolves with the parsed layout', async () => {
@@ -178,7 +244,7 @@ describe('Commands', () => {
     it('parses into correct layout node and sends to native', () => {
       uut.push('theComponentId', { component: { name: 'com.example.MyScreen' } });
       expect(mockCommandsSender.push).toHaveBeenCalledTimes(1);
-      expect(mockCommandsSender.push).toHaveBeenCalledWith('theComponentId', {
+      expect(mockCommandsSender.push).toHaveBeenCalledWith('push+UNIQUE_ID', 'theComponentId', {
         type: 'Component',
         id: 'Component+UNIQUE_ID',
         data: {
@@ -194,7 +260,7 @@ describe('Commands', () => {
     it('pops a component, passing componentId', () => {
       uut.pop('theComponentId', {});
       expect(mockCommandsSender.pop).toHaveBeenCalledTimes(1);
-      expect(mockCommandsSender.pop).toHaveBeenCalledWith('theComponentId', {});
+      expect(mockCommandsSender.pop).toHaveBeenCalledWith('pop+UNIQUE_ID', 'theComponentId', {});
     });
     it('pops a component, passing componentId and options', () => {
       const options = {
@@ -207,7 +273,7 @@ describe('Commands', () => {
       };
       uut.pop('theComponentId', options);
       expect(mockCommandsSender.pop).toHaveBeenCalledTimes(1);
-      expect(mockCommandsSender.pop).toHaveBeenCalledWith('theComponentId', options);
+      expect(mockCommandsSender.pop).toHaveBeenCalledWith('pop+UNIQUE_ID', 'theComponentId', options);
     });
 
     it('pop returns a promise that resolves to componentId', async () => {
@@ -221,7 +287,7 @@ describe('Commands', () => {
     it('pops all components until the passed Id is top', () => {
       uut.popTo('theComponentId');
       expect(mockCommandsSender.popTo).toHaveBeenCalledTimes(1);
-      expect(mockCommandsSender.popTo).toHaveBeenCalledWith('theComponentId');
+      expect(mockCommandsSender.popTo).toHaveBeenCalledWith('popTo+UNIQUE_ID', 'theComponentId');
     });
 
     it('returns a promise that resolves to targetId', async () => {
@@ -235,7 +301,7 @@ describe('Commands', () => {
     it('pops all components to root', () => {
       uut.popToRoot('theComponentId');
       expect(mockCommandsSender.popToRoot).toHaveBeenCalledTimes(1);
-      expect(mockCommandsSender.popToRoot).toHaveBeenCalledWith('theComponentId');
+      expect(mockCommandsSender.popToRoot).toHaveBeenCalledWith('popToRoot+UNIQUE_ID', 'theComponentId');
     });
 
     it('returns a promise that resolves to targetId', async () => {
@@ -249,7 +315,7 @@ describe('Commands', () => {
     it('parses into correct layout node and sends to native', () => {
       uut.setStackRoot('theComponentId', { component: { name: 'com.example.MyScreen' } });
       expect(mockCommandsSender.setStackRoot).toHaveBeenCalledTimes(1);
-      expect(mockCommandsSender.setStackRoot).toHaveBeenCalledWith('theComponentId', {
+      expect(mockCommandsSender.setStackRoot).toHaveBeenCalledWith('setStackRoot+UNIQUE_ID', 'theComponentId', {
         type: 'Component',
         id: 'Component+UNIQUE_ID',
         data: {
@@ -269,7 +335,7 @@ describe('Commands', () => {
         }
       });
       expect(mockCommandsSender.showOverlay).toHaveBeenCalledTimes(1);
-      expect(mockCommandsSender.showOverlay).toHaveBeenCalledWith({
+      expect(mockCommandsSender.showOverlay).toHaveBeenCalledWith('showOverlay+UNIQUE_ID', {
         type: 'Component',
         id: 'Component+UNIQUE_ID',
         data: {
@@ -283,7 +349,7 @@ describe('Commands', () => {
     it('deep clones input to avoid mutation errors', () => {
       const obj = {};
       uut.showOverlay({ component: { name: 'name', inner: obj } });
-      expect(mockCommandsSender.showOverlay.mock.calls[0][0].data.inner).not.toBe(obj);
+      expect(mockCommandsSender.showOverlay.mock.calls[0][1].data.inner).not.toBe(obj);
     });
 
     it('resolves with the component id', async () => {
@@ -304,7 +370,7 @@ describe('Commands', () => {
     it('send command to native with componentId', () => {
       uut.dismissOverlay('Component1');
       expect(mockCommandsSender.dismissOverlay).toHaveBeenCalledTimes(1);
-      expect(mockCommandsSender.dismissOverlay).toHaveBeenCalledWith('Component1');
+      expect(mockCommandsSender.dismissOverlay).toHaveBeenCalledWith('dismissOverlay+UNIQUE_ID', 'Component1');
     });
   });
 
@@ -316,7 +382,7 @@ describe('Commands', () => {
       const mockParser = { parse: () => 'parsed' };
       const mockCrawler = { crawl: (x) => x, processOptions: (x) => x };
       commandsObserver.register(cb);
-      uut = new Commands(mockCommandsSender, mockParser, mockCrawler, commandsObserver);
+      uut = new Commands(mockCommandsSender, mockParser, mockCrawler, commandsObserver, new UniqueIdProvider());
     });
 
     function getAllMethodsOfUut() {
@@ -351,7 +417,7 @@ describe('Commands', () => {
 
     it('notify on all commands', () => {
       _.forEach(getAllMethodsOfUut(), (m) => {
-        uut[m]();
+        uut[m]({});
       });
       expect(cb).toHaveBeenCalledTimes(getAllMethodsOfUut().length);
     });
@@ -360,7 +426,7 @@ describe('Commands', () => {
       const argsForMethodName = {
         setRoot: [{}],
         setDefaultOptions: [{}],
-        setOptions: ['id', {}],
+        mergeOptions: ['id', {}],
         showModal: [{}],
         dismissModal: ['id'],
         dismissAllModals: [],
@@ -371,21 +437,23 @@ describe('Commands', () => {
         setStackRoot: ['id', {}],
         showOverlay: [{}],
         dismissOverlay: ['id'],
+        getLaunchArgs: ['id']
       };
       const paramsForMethodName = {
-        setRoot: { layout: 'parsed' },
+        setRoot: { commandId: 'setRoot+UNIQUE_ID', layout: { root: 'parsed', modals: [], overlays: [] } },
         setDefaultOptions: { options: {} },
-        setOptions: { componentId: 'id', options: {} },
-        showModal: { layout: 'parsed' },
-        dismissModal: { componentId: 'id' },
-        dismissAllModals: {},
-        push: { componentId: 'id', layout: 'parsed' },
-        pop: { componentId: 'id', options: {} },
-        popTo: { componentId: 'id' },
-        popToRoot: { componentId: 'id' },
-        setStackRoot: { componentId: 'id', layout: 'parsed' },
-        showOverlay: { layout: 'parsed' },
-        dismissOverlay: { componentId: 'id' },
+        mergeOptions: { componentId: 'id', options: {} },
+        showModal: { commandId: 'showModal+UNIQUE_ID', layout: 'parsed' },
+        dismissModal: { commandId: 'dismissModal+UNIQUE_ID', componentId: 'id' },
+        dismissAllModals: { commandId: 'dismissAllModals+UNIQUE_ID' },
+        push: { commandId: 'push+UNIQUE_ID', componentId: 'id', layout: 'parsed' },
+        pop: { commandId: 'pop+UNIQUE_ID', componentId: 'id', options: {} },
+        popTo: { commandId: 'popTo+UNIQUE_ID', componentId: 'id' },
+        popToRoot: { commandId: 'popToRoot+UNIQUE_ID', componentId: 'id' },
+        setStackRoot: { commandId: 'setStackRoot+UNIQUE_ID', componentId: 'id', layout: 'parsed' },
+        showOverlay: { commandId: 'showOverlay+UNIQUE_ID', layout: 'parsed' },
+        dismissOverlay: { commandId: 'dismissOverlay+UNIQUE_ID', componentId: 'id' },
+        getLaunchArgs: { commandId: 'getLaunchArgs+UNIQUE_ID' },
       };
       _.forEach(getAllMethodsOfUut(), (m) => {
         it(`for ${m}`, () => {

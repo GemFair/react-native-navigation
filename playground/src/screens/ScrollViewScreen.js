@@ -37,6 +37,7 @@ class ScrollViewScreen extends Component {
       topBarHideOnScroll: false
     };
     this.onClickToggleTopBarHideOnScroll = this.onClickToggleTopBarHideOnScroll.bind(this);
+    this.onClickPop = this.onClickPop.bind(this);
   }
 
   render() {
@@ -45,6 +46,7 @@ class ScrollViewScreen extends Component {
         <ScrollView testID={testIDs.SCROLLVIEW_ELEMENT} contentContainerStyle={styles.contentContainer}>
           <View>
             <Button title='Toggle Top Bar Hide On Scroll' testID={testIDs.TOGGLE_TOP_BAR_HIDE_ON_SCROLL} onPress={this.onClickToggleTopBarHideOnScroll} />
+            <Button title='Pop screen' testID={testIDs.POP_BUTTON} onPress={this.onClickPop} />
           </View>
         </ScrollView>
       </View>
@@ -57,8 +59,12 @@ class ScrollViewScreen extends Component {
     });
   }
 
+  onClickPop() {
+    Navigation.pop(this.props.componentId);
+  }
+
   componentDidUpdate() {
-    Navigation.setOptions(this.props.componentId, {
+    Navigation.mergeOptions(this.props.componentId, {
       topBar: {
         hideOnScroll: this.state.topBarHideOnScroll
       },

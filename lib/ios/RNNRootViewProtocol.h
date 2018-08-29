@@ -1,17 +1,15 @@
 #import "RNNNavigationOptions.h"
+#import "RNNRootViewController.h"
 
-@protocol RNNRootViewProtocol <NSObject, UINavigationControllerDelegate, UIViewControllerTransitioningDelegate>
+@protocol RNNRootViewProtocol <NSObject, UINavigationControllerDelegate, UIViewControllerTransitioningDelegate, UISplitViewControllerDelegate>
 
 @optional
-- (void)mergeOptions:(NSDictionary*)options;
-- (BOOL)isCustomViewController;
+
 - (void)performOnRotation:(void (^)(void))block;
-- (void)optionsUpdated;
+- (void)applyTabBarItem;
 
 @required
-- (BOOL)isCustomTransitioned;
-- (RNNNavigationOptions*)options;
-- (NSString *)componentId;
+- (RNNRootViewController *)getLeafViewController;
 
 @end
 

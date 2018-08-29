@@ -28,19 +28,27 @@ extern const NSInteger BLUR_TOPBAR_TAG;
 
 - (void)applyOn:(UIViewController*)viewController {
 	[self.title applyOn:viewController];
+	[self.largeTitle applyOn:viewController];
 	[self.background applyOn:viewController];
+	[self.backButton applyOn:viewController];
 	
 	if (@available(iOS 11.0, *)) {
-		if (self.largeTitle){
-			if ([self.largeTitle boolValue]) {
-				viewController.navigationController.navigationBar.prefersLargeTitles = YES;
-				viewController.navigationItem.largeTitleDisplayMode = UINavigationItemLargeTitleDisplayModeAlways;
-			} else {
-				viewController.navigationItem.largeTitleDisplayMode = UINavigationItemLargeTitleDisplayModeNever;
+		if ([self.searchBar boolValue] && !viewController.navigationItem.searchController) {
+			UISearchController *search = [[UISearchController alloc]initWithSearchResultsController:nil];
+			search.dimsBackgroundDuringPresentation = NO;
+			if ([viewController conformsToProtocol:@protocol(UISearchResultsUpdating)]) {
+				[search setSearchResultsUpdater:((UIViewController <UISearchResultsUpdating> *) viewController)];
 			}
-		} else {
-			viewController.navigationController.navigationBar.prefersLargeTitles = NO;
-			viewController.navigationItem.largeTitleDisplayMode = UINavigationItemLargeTitleDisplayModeNever;
+			search.searchBar.delegate = (id<UISearchBarDelegate>)viewController;
+			if (self.searchBarPlaceholder) {
+				search.searchBar.placeholder = self.searchBarPlaceholder;
+			}
+			viewController.navigationItem.searchController = search;
+			
+			viewController.navigationItem.hidesSearchBarWhenScrolling = [self.searchBarHiddenWhenScrolling boolValue];
+			
+			// Fixes #3450, otherwise, UIKit will infer the presentation context to be the root most view controller
+			viewController.definesPresentationContext = YES;
 		}
 	}
 	
@@ -54,13 +62,6 @@ extern const NSInteger BLUR_TOPBAR_TAG;
 		viewController.navigationController.hidesBarsOnSwipe = [self.hideOnScroll boolValue];
 	} else {
 		viewController.navigationController.hidesBarsOnSwipe = NO;
-	}
-	
-	if (self.buttonColor) {
-		UIColor* buttonColor = [RCTConvert UIColor:self.buttonColor];
-		viewController.navigationController.navigationBar.tintColor = buttonColor;
-	} else {
-		viewController.navigationController.navigationBar.tintColor = nil;
 	}
 	
 	if ([self.blur boolValue]) {
@@ -112,6 +113,12 @@ extern const NSInteger BLUR_TOPBAR_TAG;
 		disableTopBarTransparent();
 	}
 	
+	if (self.barStyle) {
+		viewController.navigationController.navigationBar.barStyle = [RCTConvert UIBarStyle:self.barStyle];
+	} else {
+		viewController.navigationController.navigationBar.barStyle = UIBarStyleDefault;
+	}
+	
 	if (self.translucent) {
 		viewController.navigationController.navigationBar.translucent = [self.translucent boolValue];
 	} else {
@@ -144,28 +151,59 @@ extern const NSInteger BLUR_TOPBAR_TAG;
 	
 	if (self.rightButtons || self.leftButtons) {
 		_navigationButtons = [[RNNNavigationButtons alloc] initWithViewController:(RNNRootViewController*)viewController];
-		[_navigationButtons applyLeftButtons:self.leftButtons rightButtons:self.rightButtons];
+		[_navigationButtons applyLeftButtons:self.leftButtons rightButtons:self.rightButtons defaultLeftButtonStyle:self.leftButtonStyle defaultRightButtonStyle:self.rightButtonStyle];
 	}
 	
-	UIImage *image = self.backButtonImage ? [RCTConvert UIImage:self.backButtonImage] : nil;
-	[[UINavigationBar appearance] setBackIndicatorImage:image];
-	[[UINavigationBar appearance] setBackIndicatorTransitionMaskImage:image];
-	
-	if (self.hideBackButtonTitle) {
-		self.backButtonTitle = @"";
+	self.rightButtons = nil;
+	self.leftButtons = nil;
+}
+
+- (void)setRightButtonColor:(NSNumber *)rightButtonColor {
+	_rightButtonColor = rightButtonColor;
+	_rightButtonStyle.color = rightButtonColor;
+}
+
+- (void)setRightButtonDisabledColor:(NSNumber *)rightButtonDisabledColor {
+	_rightButtonDisabledColor = rightButtonDisabledColor;
+	_rightButtonStyle.disabledColor = rightButtonDisabledColor;
+}
+
+- (void)setLeftButtonColor:(NSNumber *)leftButtonColor {
+	_leftButtonColor = leftButtonColor;
+	_leftButtonStyle.color = leftButtonColor;
+}
+
+- (void)setLeftButtonDisabledColor:(NSNumber *)leftButtonDisabledColor {
+	_leftButtonDisabledColor = leftButtonDisabledColor;
+	_leftButtonStyle.disabledColor = leftButtonDisabledColor;
+}
+
+- (void)setRightButtons:(id)rightButtons {
+	if ([rightButtons isKindOfClass:[NSArray class]]) {
+		_rightButtons = rightButtons;
+	} else if ([rightButtons isKindOfClass:[NSDictionary class]]) {
+		if (rightButtons[@"id"]) {
+			_rightButtons = @[rightButtons];
+		} else {
+			[_rightButtonStyle mergeWith:rightButtons];
+		}
+	} else {
+		_rightButtons = rightButtons;
 	}
-	
-	if (self.backButtonTitle) {
-		UIBarButtonItem *backItem = [[UIBarButtonItem alloc] initWithTitle:self.backButtonTitle
-																	 style:UIBarButtonItemStylePlain
-																	target:nil
-																	action:nil];
-		
-		viewController.navigationItem.backBarButtonItem = backItem;
+}
+
+- (void)setLeftButtons:(id)leftButtons {
+	if ([leftButtons isKindOfClass:[NSArray class]]) {
+		_leftButtons = leftButtons;
+	} else if ([leftButtons isKindOfClass:[NSDictionary class]]) {
+		if (leftButtons[@"id"]) {
+			_leftButtons = @[leftButtons];
+		} else {
+			[_leftButtonStyle mergeWith:leftButtons];
+		}
+	} else {
+		_leftButtons = leftButtons;
 	}
-	
-	viewController.navigationItem.hidesBackButton = [self.backButtonHidden boolValue];
-	
 }
 
 -(void)storeOriginalTopBarImages:(UIViewController*)viewController {
@@ -182,5 +220,3 @@ extern const NSInteger BLUR_TOPBAR_TAG;
 }
 
 @end
-
-

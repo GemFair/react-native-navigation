@@ -5,11 +5,10 @@ import android.graphics.Typeface;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
-import com.reactnativenavigation.parse.params.Color;
+import com.reactnativenavigation.parse.params.Colour;
 import com.reactnativenavigation.parse.params.Number;
 import com.reactnativenavigation.utils.Task;
 import com.reactnativenavigation.utils.ViewUtils;
-import com.reactnativenavigation.views.toptabs.TopTabs;
 
 class TopTabsStyleHelper {
     private TopTabs topTabs;
@@ -25,17 +24,17 @@ class TopTabsStyleHelper {
         }
     }
 
-    void applyTopTabsColors(Color selected, Color unselected) {
+    void applyTopTabsColors(Colour selected, Colour unselected) {
         ColorStateList originalColors = topTabs.getTabTextColors();
         int selectedTabColor = originalColors != null ? originalColors.getColorForState(topTabs.getSelectedTabColors(), -1) : -1;
         int tabTextColor = originalColors != null ? originalColors.getColorForState(topTabs.getDefaultTabColors(), -1) : -1;
 
         if (selected.hasValue()) {
-            tabTextColor = selected.get();
+            selectedTabColor = selected.get();
         }
 
         if (unselected.hasValue()) {
-            selectedTabColor = unselected.get();
+            tabTextColor = unselected.get();
         }
 
         topTabs.setTabTextColors(tabTextColor, selectedTabColor);

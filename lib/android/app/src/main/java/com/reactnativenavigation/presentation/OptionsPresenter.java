@@ -2,186 +2,114 @@ package com.reactnativenavigation.presentation;
 
 import android.app.Activity;
 import android.graphics.Color;
+import android.os.Build;
+import android.view.View;
+import android.view.ViewGroup;
+import android.view.ViewGroup.MarginLayoutParams;
 
-import com.reactnativenavigation.parse.AnimationsOptions;
 import com.reactnativenavigation.parse.Options;
 import com.reactnativenavigation.parse.OrientationOptions;
-import com.reactnativenavigation.parse.TopBarOptions;
-import com.reactnativenavigation.parse.TopTabOptions;
-import com.reactnativenavigation.parse.TopTabsOptions;
-import com.reactnativenavigation.parse.params.Button;
+import com.reactnativenavigation.parse.StatusBarOptions;
+import com.reactnativenavigation.parse.StatusBarOptions.TextColorScheme;
+import com.reactnativenavigation.parse.params.Bool;
 import com.reactnativenavigation.utils.UiUtils;
-import com.reactnativenavigation.viewcontrollers.IReactView;
-import com.reactnativenavigation.views.Component;
-import com.reactnativenavigation.views.topbar.TopBar;
 
-import java.util.ArrayList;
-
+@SuppressWarnings("FieldCanBeLocal")
 public class OptionsPresenter {
-    private static final int DEFAULT_TITLE_COLOR = Color.BLACK;
-    private static final int DEFAULT_SUBTITLE_COLOR = Color.GRAY;
-    private final float defaultTitleFontSize;
-    private final float defaultSubtitleFontSize;
 
-    private TopBar topBar;
+    private Activity activity;
+    private Options defaultOptions;
 
-    public OptionsPresenter(TopBar topBar) {
-        this.topBar = topBar;
-        defaultTitleFontSize = UiUtils.dpToSp(topBar.getContext(), 18);
-        defaultSubtitleFontSize = UiUtils.dpToSp(topBar.getContext(), 14);
+    public OptionsPresenter(Activity activity, Options defaultOptions) {
+        this.activity = activity;
+        this.defaultOptions = defaultOptions;
     }
 
-    public void applyChildOptions(Options options, Component child) {
-        applyOrientation(options.orientationOptions);
-        applyButtons(options.topBar.leftButtons, options.topBar.rightButtons);
-        applyTopBarOptions(options.topBar, options.animations, child, options);
-        applyTopTabsOptions(options.topTabsOptions);
-        applyTopTabOptions(options.topTabOptions);
+    public void setDefaultOptions(Options defaultOptions) {
+        this.defaultOptions = defaultOptions;
     }
 
-    public void applyOrientation(OrientationOptions options) {
-        ((Activity) topBar.getContext()).setRequestedOrientation(options.getValue());
+    public void applyLayoutOptions(ViewGroup.LayoutParams layoutParams) {
+
     }
 
-    private void applyTopBarOptions(TopBarOptions options, AnimationsOptions animationOptions, Component component, Options componentOptions) {
-        topBar.setTitle(options.title.text.get(""));
-        if (options.title.component.hasValue()) topBar.setTitleComponent(options.title.component);
-        topBar.setTitleFontSize(options.title.fontSize.get(defaultTitleFontSize));
-        topBar.setTitleTextColor(options.title.color.get(DEFAULT_TITLE_COLOR));
-        topBar.setTitleTypeface(options.title.fontFamily);
-        topBar.setTitleAlignment(options.title.alignment);
+    public void present(View view, Options options) {
+        Options withDefaultOptions = options.copy().withDefaultOptions(defaultOptions);
+        applyOrientation(withDefaultOptions.layout.orientation);
+        applyViewOptions(view, withDefaultOptions);
+        applyStatusBarOptions(view, withDefaultOptions.statusBar);
+    }
 
-        topBar.setSubtitle(options.subtitle.text.get(""));
-        topBar.setSubtitleFontSize(options.subtitle.fontSize.get(defaultSubtitleFontSize));
-        topBar.setSubtitleColor(options.subtitle.color.get(DEFAULT_SUBTITLE_COLOR));
-        topBar.setSubtitleFontFamily(options.subtitle.fontFamily);
-        topBar.setSubtitleAlignment(options.subtitle.alignment);
+    public void applyRootOptions(View view, Options options) {
+        Options withDefaultOptions = options.copy().withDefaultOptions(defaultOptions);
+        setDrawBehindStatusBar(view, withDefaultOptions.statusBar);
+    }
 
-        topBar.setBackgroundColor(options.background.color);
-        topBar.setBackgroundComponent(options.background.component);
-        if (options.testId.hasValue()) topBar.setTestId(options.testId.get());
+    public void onViewBroughtToFront(View view, Options options) {
+        Options withDefaultOptions = options.copy().withDefaultOptions(defaultOptions);
+        applyStatusBarOptions(view, withDefaultOptions.statusBar);
+    }
 
-        if (options.visible.isFalse()) {
-            if (options.animate.isTrueOrUndefined() && componentOptions.animations.push.enable.isTrueOrUndefined()) {
-                topBar.hideAnimate(animationOptions.pop.topBar);
-            } else {
-                topBar.hide();
-            }
+    private void applyOrientation(OrientationOptions options) {
+        activity.setRequestedOrientation(options.getValue());
+    }
+
+    private void applyViewOptions(View view, Options options) {
+        if (options.layout.backgroundColor.hasValue()) {
+            view.setBackgroundColor(options.layout.backgroundColor.get());
         }
-        if (options.visible.isTrueOrUndefined()) {
-            if (options.animate.isTrueOrUndefined() && componentOptions.animations.push.enable.isTrueOrUndefined()) {
-                topBar.showAnimate(animationOptions.push.topBar);
-            } else {
-                topBar.show();
-            }
-        }
-        if (options.drawBehind.isTrue()) {
-            component.drawBehindTopBar();
-        } else if (options.drawBehind.isFalseOrUndefined()) {
-            component.drawBelowTopBar(topBar);
-        }
-        if (options.hideOnScroll.isTrue()) {
-            if (component instanceof IReactView) {
-                topBar.enableCollapse(((IReactView) component).getScrollEventListener());
-            }
-        } else if (options.hideOnScroll.isFalseOrUndefined()) {
-            topBar.disableCollapse();
+        applyTopMargin(view, options);
+    }
+
+    private void applyTopMargin(View view, Options options) {
+        if (view.getLayoutParams() instanceof MarginLayoutParams && options.layout.topMargin.hasValue()) {
+            ((MarginLayoutParams) view.getLayoutParams()).topMargin = options.layout.topMargin.get(0);
         }
     }
 
-    private void applyButtons(ArrayList<Button> leftButtons, ArrayList<Button> rightButtons) {
-        topBar.setLeftButtons(leftButtons);
-        topBar.setRightButtons(rightButtons);
+    private void applyStatusBarOptions(View view, StatusBarOptions statusBar) {
+        setStatusBarBackgroundColor(statusBar);
+        setTextColorScheme(statusBar.textColorScheme);
+        setStatusBarVisible(view, statusBar.visible, statusBar.drawBehind);
     }
 
-    private void applyTopTabsOptions(TopTabsOptions options) {
-        topBar.applyTopTabsColors(options.selectedTabColor, options.unselectedTabColor);
-        topBar.applyTopTabsFontSize(options.fontSize);
-        topBar.setTopTabsVisible(options.visible.isTrueOrUndefined());
-    }
-
-    private void applyTopTabOptions(TopTabOptions topTabOptions) {
-        if (topTabOptions.fontFamily != null) topBar.setTopTabFontFamily(topTabOptions.tabIndex, topTabOptions.fontFamily);
-    }
-
-    public void onChildWillAppear(Options appearing, Options disappearing) {
-        if (disappearing.topBar.visible.isTrueOrUndefined() && appearing.topBar.visible.isFalse()) {
-            if (disappearing.topBar.animate.isTrueOrUndefined() && disappearing.animations.pop.enable.isTrueOrUndefined()) {
-                topBar.hideAnimate(disappearing.animations.pop.topBar);
-            } else {
-                topBar.hide();
-            }
+    private void setStatusBarVisible(View view, Bool visible, Bool drawBehind) {
+        if (visible.isFalse()) {
+            view.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN | View.SYSTEM_UI_FLAG_FULLSCREEN);
+        } else if (drawBehind.isTrue()) {
+            view.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN);
         }
     }
 
-    public void mergeChildOptions(Options options, Component child) {
-        mergeOrientation(options.orientationOptions);
-        mergeButtons(options.topBar.leftButtons, options.topBar.rightButtons);
-        mergeTopBarOptions(options.topBar, options.animations, child);
-        mergeTopTabsOptions(options.topTabsOptions);
-        mergeTopTabOptions(options.topTabOptions);
-    }
-
-    private void mergeOrientation(OrientationOptions orientationOptions) {
-        if (orientationOptions.hasValue()) applyOrientation(orientationOptions);
-    }
-
-    private void mergeButtons(ArrayList<Button> leftButtons, ArrayList<Button> rightButtons) {
-        if (leftButtons != null) topBar.setLeftButtons(leftButtons);
-        if (rightButtons != null) topBar.setRightButtons(rightButtons);
-    }
-
-    private void mergeTopBarOptions(TopBarOptions options, AnimationsOptions animationsOptions, Component component) {
-        if (options.title.text.hasValue()) topBar.setTitle(options.title.text.get());
-        if (options.title.component.hasValue()) topBar.setTitleComponent(options.title.component);
-        if (options.title.color.hasValue()) topBar.setTitleTextColor(options.title.color.get());
-        if (options.title.fontSize.hasValue()) topBar.setTitleFontSize(options.title.fontSize.get());
-        if (options.title.fontFamily != null) topBar.setTitleTypeface(options.title.fontFamily);
-
-        if (options.subtitle.text.hasValue()) topBar.setSubtitle(options.subtitle.text.get());
-        if (options.subtitle.color.hasValue()) topBar.setSubtitleColor(options.subtitle.color.get());
-        if (options.subtitle.fontSize.hasValue()) topBar.setSubtitleFontSize(options.subtitle.fontSize.get());
-        if (options.subtitle.fontFamily != null) topBar.setSubtitleFontFamily(options.subtitle.fontFamily);
-
-        if (options.background.color.hasValue()) topBar.setBackgroundColor(options.background.color);
-
-        if (options.testId.hasValue()) topBar.setTestId(options.testId.get());
-
-        if (options.visible.isFalse()) {
-            if (options.animate.isTrueOrUndefined()) {
-                topBar.hideAnimate(animationsOptions.pop.topBar);
-            } else {
-                topBar.hide();
-            }
-        }
-        if (options.visible.isTrue()) {
-            if (options.animate.isTrueOrUndefined()) {
-                topBar.showAnimate(animationsOptions.push.topBar);
-            } else {
-                topBar.show();
-            }
-        }
-        if (options.drawBehind.isTrue()) {
-            component.drawBehindTopBar();
-        }
-        if (options.drawBehind.isFalse()) {
-            component.drawBelowTopBar(topBar);
-        }
-        if (options.hideOnScroll.isTrue() && component instanceof IReactView) {
-            topBar.enableCollapse(((IReactView) component).getScrollEventListener());
-        }
-        if (options.hideOnScroll.isFalse()) {
-            topBar.disableCollapse();
+    private void setStatusBarBackgroundColor(StatusBarOptions statusBar) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            activity.getWindow().setStatusBarColor(statusBar.backgroundColor.get(Color.BLACK));
         }
     }
 
-    private void mergeTopTabsOptions(TopTabsOptions options) {
-        if (options.selectedTabColor.hasValue() && options.unselectedTabColor.hasValue()) topBar.applyTopTabsColors(options.selectedTabColor, options.unselectedTabColor);
-        if (options.fontSize.hasValue()) topBar.applyTopTabsFontSize(options.fontSize);
-        if (options.visible.hasValue()) topBar.setTopTabsVisible(options.visible.isTrue());
+    private void setTextColorScheme(TextColorScheme scheme) {
+        final View view = activity.getWindow().getDecorView();
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) return;
+        if (scheme == TextColorScheme.Dark) {
+            int flags = view.getSystemUiVisibility();
+            flags |= View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
+            view.setSystemUiVisibility(flags);
+        } else {
+            clearDarkTextColorScheme(view);
+        }
     }
 
-    private void mergeTopTabOptions(TopTabOptions topTabOptions) {
-        if (topTabOptions.fontFamily != null) topBar.setTopTabFontFamily(topTabOptions.tabIndex, topTabOptions.fontFamily);
+    private static void clearDarkTextColorScheme(View view) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) return;
+        int flags = view.getSystemUiVisibility();
+        flags &= ~View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
+        view.setSystemUiVisibility(flags);
+    }
+
+    private void setDrawBehindStatusBar(View view, StatusBarOptions statusBar) {
+        if (statusBar.visible.isFalse()) {
+            ((MarginLayoutParams) view.getLayoutParams()).topMargin = statusBar.drawBehind.isTrue() ?
+                    0 : UiUtils.getStatusBarHeight(activity);
+        }
     }
 }

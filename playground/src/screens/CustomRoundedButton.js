@@ -8,11 +8,13 @@ const {
   Alert,
   Platform
 } = require('react-native');
+const { Navigation } = require('react-native-navigation');
 
 class CustomRoundedButton extends Component {
 
   constructor(props) {
     super(props);
+    this.subscription = Navigation.events().bindComponent(this);
     this.state = {};
   }
 
@@ -29,6 +31,7 @@ class CustomRoundedButton extends Component {
   }
 
   componentWillUnmount() {
+    this.subscription.remove();
     console.log('RNN', `CRB.componentWillUnmount`);
   }
 
@@ -37,7 +40,7 @@ class CustomRoundedButton extends Component {
       <View style={styles.container} key={'guyguy'}>
         <View style={styles.button}>
           <TouchableOpacity onPress={() => Alert.alert(this.props.title, 'Thanks for that :)')}>
-            <Text style={styles.text}>Hi:)</Text>
+            <Text style={styles.text}>{this.props.title}</Text>
           </TouchableOpacity>
         </View>
       </View>

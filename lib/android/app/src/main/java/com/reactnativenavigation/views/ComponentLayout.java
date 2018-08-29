@@ -9,20 +9,23 @@ import android.widget.RelativeLayout;
 
 import com.reactnativenavigation.interfaces.ScrollEventListener;
 import com.reactnativenavigation.parse.Options;
-import com.reactnativenavigation.presentation.ComponentOptionsPresenter;
+import com.reactnativenavigation.utils.UiUtils;
+import com.reactnativenavigation.utils.ViewUtils;
 import com.reactnativenavigation.viewcontrollers.IReactView;
-import com.reactnativenavigation.viewcontrollers.TopBarButtonController;
+import com.reactnativenavigation.viewcontrollers.TitleBarButtonController;
+import com.reactnativenavigation.views.element.Element;
 import com.reactnativenavigation.views.topbar.TopBar;
 import com.reactnativenavigation.views.touch.OverlayTouchDelegate;
+
+import java.util.List;
 
 import static android.view.ViewGroup.LayoutParams.MATCH_PARENT;
 
 @SuppressLint("ViewConstructor")
-public class ComponentLayout extends FrameLayout implements ReactComponent, TopBarButtonController.OnClickListener {
+public class ComponentLayout extends FrameLayout implements ReactComponent, TitleBarButtonController.OnClickListener {
 
     private IReactView reactView;
     private final OverlayTouchDelegate touchDelegate;
-    private final ComponentOptionsPresenter optionsPresenter;
 
     public ComponentLayout(Context context, IReactView reactView) {
 		super(context);
@@ -30,7 +33,6 @@ public class ComponentLayout extends FrameLayout implements ReactComponent, TopB
         addView(reactView.asView(), MATCH_PARENT, MATCH_PARENT);
         setContentDescription("ComponentLayout");
         touchDelegate = new OverlayTouchDelegate(reactView);
-        optionsPresenter = new ComponentOptionsPresenter(this);
     }
 
     @Override
@@ -58,10 +60,8 @@ public class ComponentLayout extends FrameLayout implements ReactComponent, TopB
 		reactView.sendComponentStop();
 	}
 
-    @Override
     public void applyOptions(Options options) {
-        optionsPresenter.present(options);
-        touchDelegate.setInterceptTouchOutside(options.overlayOptions.interceptTouchOutside.isTrue());
+        touchDelegate.setInterceptTouchOutside(options.overlayOptions.interceptTouchOutside);
     }
 
     @Override
@@ -81,7 +81,7 @@ public class ComponentLayout extends FrameLayout implements ReactComponent, TopB
 
     @Override
     public void drawBehindTopBar() {
-        if (getParent() instanceof RelativeLayout) {
+        if (getLayoutParams() instanceof RelativeLayout.LayoutParams) {
             RelativeLayout.LayoutParams layoutParams = (RelativeLayout.LayoutParams) getLayoutParams();
             layoutParams.topMargin = 0;
             setLayoutParams(layoutParams);
@@ -90,11 +90,26 @@ public class ComponentLayout extends FrameLayout implements ReactComponent, TopB
 
     @Override
     public void drawBelowTopBar(TopBar topBar) {
-        if (getParent() instanceof RelativeLayout) {
+        if (getLayoutParams() instanceof RelativeLayout.LayoutParams) {
             RelativeLayout.LayoutParams layoutParams = (RelativeLayout.LayoutParams) getLayoutParams();
-            layoutParams.topMargin = topBar.getHeight();
+            int topBarHeight = ViewUtils.getPreferredHeight(topBar);
+            if (topBarHeight == 0) {
+                UiUtils.runOnPreDrawOnce(topBar, () -> layoutParams.topMargin = topBar.getHeight());
+            } else {
+                layoutParams.topMargin = topBarHeight;
+            }
             setLayoutParams(layoutParams);
         }
+    }
+
+    @Override
+    public boolean isRendered() {
+        return reactView.isRendered();
+    }
+
+    @Override
+    public List<Element> getElements() {
+        return reactView.getElements();
     }
 
     @Override

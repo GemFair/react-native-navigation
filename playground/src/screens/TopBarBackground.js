@@ -4,11 +4,13 @@ const {
   StyleSheet,
   View
 } = require('react-native');
+const { Navigation } = require('react-native-navigation');
 
 class TopBarBackground extends Component {
 
   constructor(props) {
     super(props);
+    this.subscription = Navigation.events().bindComponent(this);
     this.state = {};
     this.dots = new Array(55).fill('').map((ignored, i) => <View key={'dot' + i} style={[styles.dot, {backgroundColor: this.props.color}]}/>);
   }
@@ -27,6 +29,7 @@ class TopBarBackground extends Component {
 
   componentWillUnmount() {
     console.log('RNN', `TBB.componentWillUnmount`);
+    this.subscription.remove();
   }
 
   render() {
@@ -44,7 +47,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     flexDirection: 'row',
-    backgroundColor: '#e0e0e0',
+    backgroundColor: '#EDEDED',
     flexWrap: 'wrap'
   },
   dot: {

@@ -13,20 +13,16 @@ extern const NSInteger BLUR_TOPBAR_TAG;
 		[(RNNTabBarController*)viewController.tabBarController setSelectedIndexByComponentID:self.currentTabId];
 	}
 	
-	if (self.visible) {
-		[((RNNTabBarController *)viewController.tabBarController) setTabBarHidden:![self.visible boolValue] animated:[self.animate boolValue]];
-	} else {
-		[((RNNTabBarController *)viewController.tabBarController) setTabBarHidden:NO animated:NO];
-	}
-	
 	if (self.testID) {
 		viewController.tabBarController.tabBar.accessibilityIdentifier = self.testID;
 	}
 	
 	if (self.drawBehind) {
 		if ([self.drawBehind boolValue]) {
+			[viewController setExtendedLayoutIncludesOpaqueBars:YES];
 			viewController.edgesForExtendedLayout |= UIRectEdgeBottom;
 		} else {
+			[viewController setExtendedLayoutIncludesOpaqueBars:NO];
 			viewController.edgesForExtendedLayout &= ~UIRectEdgeBottom;
 		}
 	}
@@ -37,6 +33,12 @@ extern const NSInteger BLUR_TOPBAR_TAG;
 		viewController.tabBarController.tabBar.barTintColor = nil;
 	}
 	
+	if (self.barStyle) {
+		viewController.tabBarController.tabBar.barStyle = [RCTConvert UIBarStyle:self.barStyle];
+	} else {
+		viewController.tabBarController.tabBar.barStyle = UIBarStyleDefault;
+	}
+
 	if (self.translucent) {
 		viewController.tabBarController.tabBar.translucent = [self.translucent boolValue];
 	} else {
@@ -46,24 +48,7 @@ extern const NSInteger BLUR_TOPBAR_TAG;
 	if (self.hideShadow) {
 		viewController.tabBarController.tabBar.clipsToBounds = [self.hideShadow boolValue];
 	}
-	
-	if (self.tabBarTextFont) {
-		NSMutableDictionary* tabBarTitleTextAttributes = [NSMutableDictionary new];
-		tabBarTitleTextAttributes[NSFontAttributeName] = self.tabBarTextFont;
-		
-		for (UITabBarItem* item in viewController.tabBarController.tabBar.items) {
-			[item setTitleTextAttributes:tabBarTitleTextAttributes forState:UIControlStateNormal];
-		}
-	}
-	
-	if (self.tabColor) {
-		viewController.tabBarController.tabBar.unselectedItemTintColor = [RCTConvert UIColor:self.tabColor];
-	}
-	
-	if (self.selectedTabColor) {
-		viewController.tabBarController.tabBar.tintColor = [RCTConvert UIColor:self.selectedTabColor];
-	}
-	
+
 	[self resetOptions];
 }
 

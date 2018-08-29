@@ -6,16 +6,13 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import com.reactnativenavigation.BaseTest;
+import com.reactnativenavigation.TestUtils;
 import com.reactnativenavigation.mocks.SimpleViewController;
-import com.reactnativenavigation.mocks.TitleBarReactViewCreatorMock;
-import com.reactnativenavigation.mocks.TopBarBackgroundViewCreatorMock;
-import com.reactnativenavigation.mocks.TopBarButtonCreatorMock;
 import com.reactnativenavigation.parse.FabOptions;
 import com.reactnativenavigation.parse.Options;
 import com.reactnativenavigation.parse.params.Text;
 import com.reactnativenavigation.utils.CommandListenerAdapter;
-import com.reactnativenavigation.viewcontrollers.topbar.TopBarBackgroundViewController;
-import com.reactnativenavigation.viewcontrollers.topbar.TopBarController;
+import com.reactnativenavigation.viewcontrollers.stack.StackController;
 import com.reactnativenavigation.views.Fab;
 import com.reactnativenavigation.views.FabMenu;
 import com.reactnativenavigation.views.StackLayout;
@@ -32,15 +29,18 @@ public class FloatingActionButtonTest extends BaseTest {
     private SimpleViewController childFab;
     private SimpleViewController childNoFab;
     private Activity activity;
+    private ChildControllersRegistry childRegistry;
 
     @Override
     public void beforeEach() {
         super.beforeEach();
         activity = newActivity();
-        stackController = new StackController(activity, new TopBarButtonCreatorMock(), new TitleBarReactViewCreatorMock(), new TopBarBackgroundViewController(activity, new TopBarBackgroundViewCreatorMock()), new TopBarController(), "stackController", new Options());
+        childRegistry = new ChildControllersRegistry();
+        stackController = TestUtils.newStackController(activity).build();
+        stackController.ensureViewIsCreated();
         Options options = getOptionsWithFab();
-        childFab = new SimpleViewController(activity, "child1", options);
-        childNoFab = new SimpleViewController(activity, "child2", new Options());
+        childFab = new SimpleViewController(activity, childRegistry, "child1", options);
+        childNoFab = new SimpleViewController(activity, childRegistry, "child2", new Options());
     }
 
     @NonNull
@@ -122,7 +122,7 @@ public class FloatingActionButtonTest extends BaseTest {
 
     @Test
     public void hasChildren() {
-        childFab = new SimpleViewController(activity, "child1", getOptionsWithFabActions());
+        childFab = new SimpleViewController(activity, childRegistry, "child1", getOptionsWithFabActions());
         stackController.push(childFab, new CommandListenerAdapter());
         childFab.onViewAppeared();
         assertThat(hasFab()).isTrue();

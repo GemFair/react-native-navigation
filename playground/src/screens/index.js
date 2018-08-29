@@ -23,6 +23,8 @@ const CustomTextButton = require('./CustomTextButton');
 const CustomRoundedButton = require('./CustomRoundedButton');
 const TopBarBackground = require('./TopBarBackground');
 const ComplexLayout = require('./ComplexLayout');
+const SearchScreen = require('./SearchScreen');
+const KeyboardScreen = require('./KeyboardScreen');
 
 function registerScreens() {
   Navigation.registerComponent(`navigation.playground.CustomTransitionDestination`, () => CustomTransitionDestination);
@@ -49,6 +51,8 @@ function registerScreens() {
   Navigation.registerComponent('CustomTextButton', () => CustomTextButton);
   Navigation.registerComponent('CustomRoundedButton', () => CustomRoundedButton);
   Navigation.registerComponent('TopBarBackground', () => TopBarBackground);
+  Navigation.registerComponent('navigation.playground.SearchControllerScreen', () => SearchScreen);
+  Navigation.registerComponent('navigation.playground.KeyboardScreen', () => KeyboardScreen);
 }
 
 module.exports = {

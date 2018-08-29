@@ -1,14 +1,23 @@
 const detox = require('detox');
 const config = require('../package.json').detox;
 const exec = require('shell-utils').exec;
+const adapter = require('detox/runners/jest/adapter');
 
-before(async () => {
-  await detox.init(config, { launchApp: false });
+jest.setTimeout(300000);
+jasmine.getEnv().addReporter(adapter); // don't forget this line
+
+beforeAll(async () => {
+  await detox.init(config, {launchApp: false});
   disableAndroidEmulatorAnimations();
 });
 
-after(async () => {
+afterAll(async () => {
+  await adapter.afterAll();
   await detox.cleanup();
+});
+
+beforeEach(async () => {
+  await adapter.beforeEach();
 });
 
 function disableAndroidEmulatorAnimations() {

@@ -1,40 +1,34 @@
 package com.reactnativenavigation.anim;
 
 
+import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
-import android.animation.AnimatorSet;
 import android.content.Context;
 import android.view.View;
 
 import com.reactnativenavigation.parse.AnimationOptions;
-import com.reactnativenavigation.parse.AnimationsOptions;
 
 public class ModalAnimator extends BaseAnimator {
 
-    public ModalAnimator(Context context, AnimationsOptions options) {
+    private Animator animator;
+
+    public ModalAnimator(Context context) {
         super(context);
-        this.options = options;
     }
 
-    public void animateShow(View contentView, AnimatorListenerAdapter listener) {
-        AnimatorSet animatorSet;
-        if (options.showModal.hasValue()) {
-            animatorSet = options.showModal.getAnimation(contentView);
-        } else {
-            animatorSet = getDefaultPushAnimation(contentView);
-        }
-        animatorSet.addListener(listener);
-        animatorSet.start();
+    public void show(View view, AnimationOptions show, AnimatorListenerAdapter listener) {
+        animator = show.getAnimation(view, getDefaultPushAnimation(view));
+        animator.addListener(listener);
+        animator.start();
     }
 
-    public void animateDismiss(View contentView, AnimatorListenerAdapter listener) {
-        AnimatorSet animatorSet;
-        if (options.dismissModal.hasValue()) {
-            animatorSet = options.dismissModal.getAnimation(contentView);
-        } else {
-            animatorSet = getDefaultPopAnimation(contentView);
-        }
-        animatorSet.addListener(listener);
-        animatorSet.start();
+    public void dismiss(View view, AnimationOptions dismiss, AnimatorListenerAdapter listener) {
+        animator = dismiss.getAnimation(view, getDefaultPopAnimation(view));
+        animator.addListener(listener);
+        animator.start();
+    }
+
+    public boolean isRunning() {
+        return animator != null && animator.isRunning();
     }
 }

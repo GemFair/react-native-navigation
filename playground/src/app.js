@@ -22,8 +22,21 @@ if (Platform.OS === 'android') {
 
 function start() {
   registerScreens();
-  Navigation.events().onAppLaunched(() => {
+  Navigation.events().registerAppLaunchedListener(() => {
     Navigation.setDefaultOptions({
+      bottomTab: {
+        iconColor: '#1B4C77',
+        selectedIconColor: '#0f0',
+        textColor: '#1B4C77',
+        selectedTextColor: '#0f0',
+        fontFamily: 'HelveticaNeue-Italic',
+        fontSize: 13
+      },
+      _animations: {
+        push: {
+          waitForRender: false,
+        }
+      },
       _animations: {
         startApp: {
           y: {
@@ -47,20 +60,6 @@ function start() {
               to: 1,
               duration: 500,
               interpolation: 'accelerate'
-            }
-          },
-          bottomTabs: {
-            y: {
-              from: 1000,
-              to: 0,
-              duration: 500,
-              interpolation: 'decelerate',
-            },
-            alpha: {
-              from: 0,
-              to: 1,
-              duration: 500,
-              interpolation: 'decelerate'
             }
           },
           bottomTabs: {
@@ -149,15 +148,18 @@ function start() {
     });
 
     Navigation.setRoot({
-      stack: {
-        id: 'TEST',
-        children: [
-          {
-            component: {
-              name: 'navigation.playground.WelcomeScreen'
+      root: {
+        stack: {
+          id: 'TEST',
+          children: [
+            {
+              component: {
+                name: 'navigation.playground.WelcomeScreen'
+                // name: 'navigation.playground.CustomTransitionOrigin'
+              }
             }
-          }
-        ]
+          ]
+        }
       }
     });
   });

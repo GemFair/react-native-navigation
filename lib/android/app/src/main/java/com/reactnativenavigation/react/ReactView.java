@@ -14,6 +14,10 @@ import com.facebook.react.uimanager.UIManagerModule;
 import com.facebook.react.uimanager.events.EventDispatcher;
 import com.reactnativenavigation.interfaces.ScrollEventListener;
 import com.reactnativenavigation.viewcontrollers.IReactView;
+import com.reactnativenavigation.views.element.Element;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @SuppressLint("ViewConstructor")
 public class ReactView extends ReactRootView implements IReactView {
@@ -23,6 +27,7 @@ public class ReactView extends ReactRootView implements IReactView {
 	private final String componentName;
 	private boolean isAttachedToReactInstance = false;
     private final JSTouchDispatcher jsTouchDispatcher;
+    private ArrayList<Element> elements = new ArrayList<>();
 
     public ReactView(final Context context, ReactInstanceManager reactInstanceManager, String componentId, String componentName) {
 		super(context);
@@ -60,17 +65,26 @@ public class ReactView extends ReactRootView implements IReactView {
 
 	@Override
 	public void sendComponentStart() {
-		new NavigationEvent(reactInstanceManager.getCurrentReactContext()).componentDidAppear(componentId, componentName);
+        ReactContext currentReactContext = reactInstanceManager.getCurrentReactContext();
+        if (currentReactContext != null) {
+            new EventEmitter(currentReactContext).componentDidAppear(componentId, componentName);
+        }
 	}
 
 	@Override
 	public void sendComponentStop() {
-		new NavigationEvent(reactInstanceManager.getCurrentReactContext()).componentDidDisappear(componentId, componentName);
+        ReactContext currentReactContext = reactInstanceManager.getCurrentReactContext();
+        if (currentReactContext != null) {
+            new EventEmitter(currentReactContext).componentDidDisappear(componentId, componentName);
+        }
 	}
 
     @Override
 	public void sendOnNavigationButtonPressed(String buttonId) {
-		new NavigationEvent(reactInstanceManager.getCurrentReactContext()).sendOnNavigationButtonPressed(componentId, buttonId);
+        ReactContext currentReactContext = reactInstanceManager.getCurrentReactContext();
+        if (currentReactContext != null) {
+            new EventEmitter(currentReactContext).emitOnNavigationButtonPressed(componentId, buttonId);
+        }
 	}
 
     @Override
@@ -83,6 +97,11 @@ public class ReactView extends ReactRootView implements IReactView {
         jsTouchDispatcher.handleTouchEvent(event, getEventDispatcher());
     }
 
+    @Override
+    public boolean isRendered() {
+        return getChildCount() >= 1;
+    }
+
     public EventDispatcher getEventDispatcher() {
         ReactContext reactContext = reactInstanceManager.getCurrentReactContext();
         return reactContext == null ? null : reactContext.getNativeModule(UIManagerModule.class).getEventDispatcher();
@@ -91,5 +110,18 @@ public class ReactView extends ReactRootView implements IReactView {
     @RestrictTo(RestrictTo.Scope.TESTS)
     public String getComponentName() {
         return componentName;
+    }
+
+    public void registerElement(Element element) {
+        elements.add(element);
+    }
+
+    public void unregisterElement(Element element) {
+        elements.remove(element);
+    }
+
+    @Override
+    public List<Element> getElements() {
+        return elements;
     }
 }

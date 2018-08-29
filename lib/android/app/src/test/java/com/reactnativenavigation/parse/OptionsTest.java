@@ -1,11 +1,13 @@
 package com.reactnativenavigation.parse;
 
+import android.graphics.Color;
 import android.graphics.Typeface;
 import android.support.annotation.NonNull;
 
 import com.reactnativenavigation.BaseTest;
 import com.reactnativenavigation.mocks.TypefaceLoaderMock;
 import com.reactnativenavigation.parse.params.Bool;
+import com.reactnativenavigation.parse.params.Colour;
 import com.reactnativenavigation.parse.params.NullText;
 import com.reactnativenavigation.parse.params.Number;
 import com.reactnativenavigation.parse.params.Text;
@@ -67,11 +69,13 @@ public class OptionsTest extends BaseTest {
 
     @Test
     public void parsesJson() throws Exception {
+        JSONObject layout = new JSONObject()
+                .put("backgroundColor", SCREEN_BACKGROUND_COLOR);
         JSONObject json = new JSONObject()
                 .put("topBar", createTopBar(TOP_BAR_VISIBLE.get()))
                 .put("fab", createFab())
                 .put("bottomTabs", createBottomTabs())
-                .put("screenBackgroundColor",SCREEN_BACKGROUND_COLOR);
+                .put("layout", layout);
         Options result = Options.parse(mockLoader, json);
         assertResult(result);
     }
@@ -91,8 +95,6 @@ public class OptionsTest extends BaseTest {
         assertThat(result.topBar.hideOnScroll.get()).isEqualTo(TOP_BAR_HIDE_ON_SCROLL.get());
         assertThat(result.bottomTabsOptions.animate.get()).isEqualTo(BOTTOM_TABS_ANIMATE.get());
         assertThat(result.bottomTabsOptions.visible.get()).isEqualTo(BOTTOM_TABS_VISIBLE.get());
-        assertThat(result.bottomTabsOptions.currentTabId.get()).isEqualTo(BOTTOM_TABS_CURRENT_TAB_ID);
-        assertThat(result.bottomTabsOptions.currentTabIndex.get()).isEqualTo(BOTTOM_TABS_CURRENT_TAB_INDEX.get());
         assertThat(result.fabOptions.id.get()).isEqualTo(FAB_ID);
         assertThat(result.fabOptions.backgroundColor.get()).isEqualTo(FAB_BACKGROUND_COLOR);
         assertThat(result.fabOptions.clickColor.get()).isEqualTo(FAB_CLICK_COLOR);
@@ -101,7 +103,7 @@ public class OptionsTest extends BaseTest {
         assertThat(result.fabOptions.hideOnScroll.get()).isEqualTo(FAB_HIDE_ON_SCROLL);
         assertThat(result.fabOptions.alignVertically.get()).isEqualTo(FAB_ALIGN_VERTICALLY);
         assertThat(result.fabOptions.alignHorizontally.get()).isEqualTo(FAB_ALIGN_HORIZONTALLY);
-        assertThat(result.screenBackgroundColor.get()).isEqualTo(SCREEN_BACKGROUND_COLOR);
+        assertThat(result.layout.backgroundColor.get()).isEqualTo(SCREEN_BACKGROUND_COLOR);
     }
 
     @NonNull
@@ -211,11 +213,13 @@ public class OptionsTest extends BaseTest {
 
     @Test
     public void mergeDefaultOptions() throws Exception {
+        JSONObject layout = new JSONObject()
+                .put("backgroundColor", SCREEN_BACKGROUND_COLOR);
         JSONObject json = new JSONObject()
                 .put("topBar", createTopBar(TOP_BAR_VISIBLE.get()))
                 .put("fab", createFab())
                 .put("bottomTabs", createBottomTabs())
-                .put("screenBackgroundColor",SCREEN_BACKGROUND_COLOR);
+                .put("layout", layout);
         Options defaultOptions = Options.parse(mockLoader, json);
         Options options = new Options();
 
@@ -224,11 +228,13 @@ public class OptionsTest extends BaseTest {
 
     @Test
     public void mergedDefaultOptionsDontOverrideGivenOptions() throws Exception {
+        JSONObject layout = new JSONObject()
+                .put("backgroundColor", SCREEN_BACKGROUND_COLOR);
         JSONObject defaultJson = new JSONObject()
                 .put("topBar", createOtherTopBar())
                 .put("fab", createOtherFab())
                 .put("bottomTabs", createOtherBottomTabs())
-                .put("screenBackgroundColor",SCREEN_BACKGROUND_COLOR);
+                .put("layout", layout);
         Options defaultOptions = Options.parse(mockLoader, defaultJson);
 
         JSONObject json = new JSONObject()
@@ -243,7 +249,7 @@ public class OptionsTest extends BaseTest {
     public void defaultEmptyOptions() {
         Options uut = new Options();
         assertThat(uut.topBar.title.text.get("")).isEmpty();
-        assertThat(uut.screenBackgroundColor.hasValue()).isFalse();
+        assertThat(uut.layout.backgroundColor.hasValue()).isFalse();
 
     }
 
@@ -265,17 +271,17 @@ public class OptionsTest extends BaseTest {
     @Test
     public void clear_bottomTabsOptions() {
         Options uut = new Options();
-        uut.bottomTabsOptions.tabColor = new com.reactnativenavigation.parse.params.Color(android.graphics.Color.RED);
+        uut.bottomTabsOptions.backgroundColor = new Colour(Color.RED);
         uut.clearBottomTabsOptions();
-        assertThat(uut.bottomTabsOptions.tabColor.hasValue()).isFalse();
+        assertThat(uut.bottomTabsOptions.backgroundColor.hasValue()).isFalse();
     }
 
     @Test
     public void clear_topTabsOptions() {
         Options uut = new Options();
-        uut.topTabsOptions.fontSize = new Number(666);
+        uut.topTabs.fontSize = new Number(666);
         uut.clearTopTabsOptions();
-        assertThat(uut.topTabsOptions.fontSize.hasValue()).isFalse();
+        assertThat(uut.topTabs.fontSize.hasValue()).isFalse();
     }
 
     @Test

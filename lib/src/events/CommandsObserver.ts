@@ -1,5 +1,5 @@
 import * as _ from 'lodash';
-import { EventSubscription } from './EventsRegistry';
+import { EventSubscription } from '../interfaces/EventSubscription';
 
 export type CommandsListener = (name: string, params: {}) => void;
 
@@ -15,6 +15,6 @@ export class CommandsObserver {
   }
 
   public notify(commandName: string, params: {}): void {
-    _.forEach(this.listeners, (listener) => listener(commandName, params));
+    _.forEach(this.listeners, (listener: CommandsListener) => listener(commandName, params));
   }
 }

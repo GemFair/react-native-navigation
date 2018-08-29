@@ -1,16 +1,15 @@
 # Styling Options
 
-You can style the navigator appearance and behavior by passing an `options` object. This object can be passed when the screen is originally created; can be defined per-screen by setting `static get options()` on the screen component; and can be overridden when a screen is pushed.
+You can style the navigator appearance and behavior by passing an `options` object. This object can be passed when the screen is originally created; can be defined per-screen by setting `static options(passProps)` on the screen component; and can be overridden when a screen is pushed, dynamically (after the screen was already rendered at least once) using `mergeOptions()`.
 
-The easiest way to style your screen is by adding `static get options()` to your screen React component definition.
+The easiest way to style your screen is by adding `static options(passProps)` to your screen React component definition. `passProps` is the same passProps you can specify as part of the push/modal or other command operation.
 
 ```js
 export default class StyledScreen extends Component {
-  static get options() {
+  static options(passProps) {
     return {
       topBar: {
         title: {
-          largeTitle: false,
           text: 'My Screen'
         },
         drawBehind: true,
@@ -19,7 +18,7 @@ export default class StyledScreen extends Component {
       }
     };
   }
-  
+
   constructor(props) {
     super(props);
   }
@@ -33,6 +32,8 @@ export default class StyledScreen extends Component {
 ## Enabling persistent styling properties
 In v2 we added `setDefaultOptions` API for styles that should be applied on all components.
 
+> `setDefaultOptions` Does not update options of existing component, therefore it should be called before `setRoot`
+
 ```js
 Navigation.setDefaultOptions({
   topBar: {
@@ -42,10 +43,10 @@ Navigation.setDefaultOptions({
 ```
 
 ## Setting styles dynamically
-Use the `setOptions` method to change a screen's style dynamically.
+Use the `mergeOptions` method to change a screen's style dynamically. WARNING! these options will be applied on an already rendered screen, after it has been rendered at least once.
 
 ```js
-Navigation.setOptions(this.props.componentId, {
+Navigation.mergeOptions(this.props.componentId, {
   topBar: {
     visible: true
   }
@@ -54,50 +55,26 @@ Navigation.setOptions(this.props.componentId, {
 
 ## Options object format
 
+### Common options
+
 ```js
 {
-  statusBarHidden: false,
-  screenBackgroundColor: 'white',
-  orientation: ['portrait', 'landscape'],
-  statusBarBlur: true,
-  statusBarHideWithTopBar: false,
-  statusBarStyle: 'light',
-  popGesture: true,
-  backgroundImage: require('background.png'),
-  rootBackgroundImage: require('rootBackground.png'),
+  statusBar: {
+    visible: false,
+    style: 'light' | 'dark'
+  },
+  layout: {
+    backgroundColor: 'white',
+    orientation: ['portrait', 'landscape'] // An array of supported orientations
+  },
+  modalPresentationStyle: 'overCurrentContext', // Supported styles are: 'formSheet', 'pageSheet', 'overFullScreen', 'overCurrentContext', 'currentContext', 'popOver', 'fullScreen' and 'none'. On Android, only overCurrentContext and none are supported.
   topBar: {
     visible: true,
-    leftButtons: [{
-      id: 'buttonOne',
-      icon: require('icon.png'),
-      component: {
-        name: 'example.CustomButtonComponent'
-      },
-      title: 'Button one',
-      enabled: true,
-      disableIconTint: false,
-      tintColor: 'red',
-      disabledColor: 'black',
-      testID: 'buttonOneTestID'
-    }],
-    rightButtons: [],
+    animate: false, // Controls whether TopBar visibility changes should be animated
     hideOnScroll: true,
     buttonColor: 'black',
-    translucent: true,
-    transparent: false,
     drawBehind: false,
-    noBorder: false,
-    blur: false,
-    animate: false,
-    largeTitle: false,
     testID: 'topBar',
-    backButtonImage: require('icon.png'),
-    backButtonHidden: false,
-    backButtonTitle: 'Back',
-    hideBackButtonTitle: false,
-    component: {
-      name: 'example.CustomTopBar'
-    },
     title: {
       text: 'Title',
       fontSize: 14,
@@ -115,6 +92,10 @@ Navigation.setOptions(this.props.componentId, {
       fontFamily: 'Helvetica',
       alignment: 'center'
     },
+    backButton: {
+      icon: require('icon.png'),
+      visible: true
+    },
     background: {
       color: '#00ff00',
       component: {
@@ -124,39 +105,128 @@ Navigation.setOptions(this.props.componentId, {
   },
   bottomTabs: {
     visible: true,
-    animate: false,
+    animate: false, // Controls whether BottomTabs visibility changes should be animated
     currentTabIndex: 0,
+    currentTabId: 'currentTabId',
     testID: 'bottomTabsTestID',
     drawBehind: false,
-    currentTabId: 'currentTabId',
-    translucent: true,
-    hideShadow: false,
-    backgroundColor: 'white',
-    tabColor: 'red',
-    selectedTabColor: 'blue',
+    backgroundColor: 'white'
+  },
+  bottomTab: {
+    text: 'Tab 1',
+    badge: '2',
+    badgeColor: 'red',
+    testID: 'bottomTabTestID',
+    icon: require('tab.png'),
+    iconColor: 'red',
+    selectedIconColor: 'blue',
+    textColor: 'red',
+    selectedTextColor: 'blue',
     fontFamily: 'Helvetica',
     fontSize: 10
   },
-  bottomTab: {
-    title: 'Tab 1',
-    badge: '2',
-    testID: 'bottomTabTestID',
-    visible: undefined,
-    icon: require('tab.png')
-  },
   sideMenu: {
     left: {
+      width: 260,
+      height: 270,
       visible: false,
       enabled: true
     },
     right: {
+      width: 260,
+      height: 270,
       visible: false,
       enabled: true
     }
   },
   overlay: {
     interceptTouchOutside: true
+  },
+  preview: {
+    elementId: 'PreviewId',
+    width: 100,
+    height: 100,
+    commit: false,
+    actions: [{
+      id: 'ActionId1',
+      title: 'Action title',
+      style: 'selected', // default, selected, destructive,
+      actions: [/* ... */]
+    }]
+  }  
+}
+```
+
+### iOS specific options
+```js
+{
+  statusBar: {
+    hideWithTopBar: false,
+    blur: true
+  },
+  popGesture: true,
+  backgroundImage: require('background.png'),
+  rootBackgroundImage: require('rootBackground.png'),
+  topBar: {
+    barStyle: 'default' | 'black',
+    translucent: true,
+    transparent: false,
+    noBorder: false,
+    blur: false,
+    backButton: {
+      title: 'Back',
+      showTitle: false
+    },
+    searchBar: true, // iOS 11+ native UISearchBar inside topBar
+    searchBarHiddenWhenScrolling: true,
+    searchBarPlaceholder: 'Search', // iOS 11+ SearchBar placeholder
+    largeTitle: {
+      visible: true,
+      fontSize: 30,
+      color: 'red',
+      fontFamily: 'Helvetica'
+    },
+  },
+  bottomTabs: {
+    barStyle: 'default' | 'black',
+    translucent: true,
+    hideShadow: false
+  },
+  bottomTab: {
+    iconInsets: { top: 0, left: 0, bottom: 0, right: 0 },
+    selectedIcon: require('selectedTab.png'),
+    disableIconTint: true, //set true if you want to disable the icon tinting
+    disableSelectedIconTint: true
   }
+}
+```
+
+### Android specific options
+
+```js
+{
+  statusBar: {
+    backgroundColor: 'red',
+    drawBehind: true,
+    visible: false
+  },
+  layout: {
+    topMargin: Navigation.constants().statusBarHeight // Set the layout's top margin
+  },
+  topBar: {
+    height: 70, // TopBar height in dp
+    borderColor: 'red',
+    borderHeight: 1.3,
+    elevation: 1.5, // TopBar elevation in dp
+    title: {
+      height: 70 // TitleBar height in dp
+    }
+  },
+  bottomTabs: {
+    titleDisplayMode: 'alwaysShow' | 'showWhenActive' | 'alwaysHide' // Sets the title state for each tab.
+  },
+  bottomTab: {
+    selectedFontSize: 19 // Selected tab font size in sp
 }
 ```
 
@@ -170,4 +240,89 @@ If you'd like to use a custom font, you'll first have to edit your project.
 
 * iOS - follow this [guide](https://medium.com/@dabit3/adding-custom-fonts-to-react-native-b266b41bff7f)
 
-All supported styles are defined [here](https://github.com/wix/react-native-controllers#styling-navigation). There's also an example project there showcasing all the different styles.
+## Customizing screen animations
+Animation used for navigation commands that modify the layout hierarchy can be controlled in options. Animations can be modified per command and it's also possible to change the default animation for each command.
+
+## Animation properties
+
+The following properties can be animated:
+* x
+* y
+* alpha
+* scaleX
+* scaleY
+* rotationX
+* rotationY
+* rotation
+
+```js
+{
+  from: 0, // Mandatory, initial value
+  to: 1, // Mandatory, end value
+  duration: 400, // Default value is 300 ms
+  startDelay: 100, // Default value is 0
+  interpolation: 'accelerate' | 'decelerate' // Optional
+}
+```
+
+For example, changing the animation used when the app is first launched:
+```js
+Navigation.setDefaultOptions({
+  animations: {
+    startApp: {
+      y: {
+        from: 1000,
+        to: 0,
+        duration: 500,
+        interpolation: 'accelerate',
+      },
+      alpha: {
+        from: 0,
+        to: 1,
+        duration: 400,
+        startDelay: 100,
+        interpolation: 'accelerate'
+      }
+    }
+  }
+});
+```
+
+## Customizing navigation commands animation
+
+Animations for the following set of commands can be customized
+* startApp
+* push
+* pop
+* showModal
+* dismissModal
+
+## Customizing stack command animation
+
+When *pushing* and *popping* screens to and from a stack, you can control the TopBar, BottomTabs and actual content animations as separately.
+
+```js
+animations: {
+  push: {
+    topBar: {
+      id: 'TEST', // Optional, id of the TopBar we'd like to animate.
+      alpha: {
+        from: 0,
+        to: 1
+      }
+    },
+    bottomTabs: {
+      alpha: {
+        from: 0,
+        to: 1
+      }
+    },
+    content: {
+      alpha: {
+        from: 0,
+        to: 1
+      }
+    }
+  }
+}
+```

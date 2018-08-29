@@ -1,14 +1,17 @@
 package com.reactnativenavigation.viewcontrollers;
 
 import android.app.Activity;
+import android.content.res.Resources;
 import android.support.annotation.NonNull;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v4.widget.DrawerLayout.LayoutParams;
+import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
 
 import com.reactnativenavigation.parse.Options;
-import com.reactnativenavigation.presentation.NavigationOptionsListener;
+import com.reactnativenavigation.parse.SideMenuOptions;
+import com.reactnativenavigation.presentation.OptionsPresenter;
 import com.reactnativenavigation.presentation.SideMenuOptionsPresenter;
 import com.reactnativenavigation.views.Component;
 
@@ -17,17 +20,27 @@ import java.util.Collection;
 
 import static android.view.ViewGroup.LayoutParams.MATCH_PARENT;
 
-public class SideMenuController extends ParentController<DrawerLayout> implements NavigationOptionsListener {
+public class SideMenuController extends ParentController<DrawerLayout> {
 
 	private ViewController centerController;
 	private ViewController leftController;
 	private ViewController rightController;
 
-	public SideMenuController(final Activity activity, final String id, Options initialOptions) {
-		super(activity, id, initialOptions);
+	public SideMenuController(Activity activity, ChildControllersRegistry childRegistry, String id, Options initialOptions, OptionsPresenter presenter) {
+		super(activity, childRegistry, id, presenter, initialOptions);
 	}
 
-	@NonNull
+    @Override
+    protected ViewController getCurrentChild() {
+	    if (getView().isDrawerOpen(Gravity.LEFT)) {
+            return leftController;
+        } else if (getView().isDrawerOpen(Gravity.RIGHT)) {
+            return rightController;
+        }
+        return centerController;
+    }
+
+    @NonNull
 	@Override
 	protected DrawerLayout createView() {
         return new DrawerLayout(getActivity());
@@ -51,16 +64,24 @@ public class SideMenuController extends ParentController<DrawerLayout> implement
     @Override
     public void applyChildOptions(Options options, Component child) {
         super.applyChildOptions(options, child);
-        applyOnParentController(parentController ->
+        performOnParentController(parentController ->
                 ((ParentController) parentController).applyChildOptions(this.options, child)
         );
     }
 
     @Override
+    public void mergeChildOptions(Options options, ViewController childController, Component child) {
+        super.mergeChildOptions(options, childController, child);
+        new SideMenuOptionsPresenter(getView()).present(options.sideMenuRootOptions);
+        performOnParentController(parentController ->
+                ((ParentController) parentController).mergeChildOptions(options.copy().clearSideMenuOptions(), childController, child)
+        );
+    }
+
+    @Override
     public void mergeOptions(Options options) {
-        this.options = this.options.mergeWith(options);
+        super.mergeOptions(options);
         new SideMenuOptionsPresenter(getView()).present(this.options.sideMenuRootOptions);
-        this.options = this.options.copy().clearSideMenuOptions();
     }
 
     public void setCenterController(ViewController centerController) {
@@ -69,13 +90,33 @@ public class SideMenuController extends ParentController<DrawerLayout> implement
 		getView().addView(childView);
 	}
 
-	public void setLeftController(ViewController controller) {
-		this.leftController = controller;
-        getView().addView(controller.getView(), new LayoutParams(MATCH_PARENT, MATCH_PARENT, Gravity.LEFT));
-	}
+    public void setLeftController(ViewController controller) {
+        this.leftController = controller;
+        int height = this.getHeight(options.sideMenuRootOptions.left);
+        int width = this.getWidth(options.sideMenuRootOptions.left);
+        getView().addView(controller.getView(), new LayoutParams(width, height, Gravity.LEFT));
+    }
 
-	public void setRightController(ViewController controller) {
-		this.rightController = controller;
-        getView().addView(controller.getView(), new LayoutParams(MATCH_PARENT, MATCH_PARENT, Gravity.RIGHT));
-	}
+    public void setRightController(ViewController controller) {
+        this.rightController = controller;
+        int height = this.getHeight(options.sideMenuRootOptions.right);
+        int width = this.getWidth(options.sideMenuRootOptions.right);
+        getView().addView(controller.getView(), new LayoutParams(width, height, Gravity.RIGHT));
+    }
+
+    protected int getWidth(SideMenuOptions sideMenuOptions) {
+        int width = MATCH_PARENT;
+        if (sideMenuOptions.width.hasValue()) {
+            width = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, sideMenuOptions.width.get(), Resources.getSystem().getDisplayMetrics());
+        }
+        return width;
+    }
+
+    protected int getHeight(SideMenuOptions sideMenuOptions) {
+        int height = MATCH_PARENT;
+        if (sideMenuOptions.height.hasValue()) {
+            height = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, sideMenuOptions.height.get(), Resources.getSystem().getDisplayMetrics());
+        }
+        return height;
+    }
 }

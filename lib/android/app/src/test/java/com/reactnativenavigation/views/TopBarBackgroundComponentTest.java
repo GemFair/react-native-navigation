@@ -1,18 +1,15 @@
 package com.reactnativenavigation.views;
 
 import android.app.Activity;
-import android.util.Log;
+import android.view.View;
 import android.view.ViewGroup;
 
 import com.reactnativenavigation.BaseTest;
 import com.reactnativenavigation.R;
-import com.reactnativenavigation.mocks.TitleBarReactViewCreatorMock;
 import com.reactnativenavigation.mocks.TopBarBackgroundViewCreatorMock;
-import com.reactnativenavigation.mocks.TopBarButtonCreatorMock;
 import com.reactnativenavigation.parse.Component;
 import com.reactnativenavigation.parse.params.Text;
 import com.reactnativenavigation.utils.ViewUtils;
-import com.reactnativenavigation.viewcontrollers.TopBarButtonController;
 import com.reactnativenavigation.viewcontrollers.topbar.TopBarBackgroundViewController;
 import com.reactnativenavigation.viewcontrollers.topbar.TopBarController;
 import com.reactnativenavigation.views.topbar.TopBar;
@@ -32,16 +29,10 @@ public class TopBarBackgroundComponentTest extends BaseTest {
     @SuppressWarnings("Convert2Lambda")
     @Override
     public void beforeEach() {
-        TopBarButtonController.OnClickListener onClickListener = spy(new TopBarButtonController.OnClickListener() {
-            @Override
-            public void onPress(String buttonId) {
-                Log.i("TopBarTest", "onPress: " + buttonId);
-            }
-        });
         Activity activity = newActivity();
         topBarBackgroundViewController = spy(new TopBarBackgroundViewController(activity, new TopBarBackgroundViewCreatorMock()));
-        StackLayout parent = new StackLayout(activity, new TopBarButtonCreatorMock(), new TitleBarReactViewCreatorMock(), topBarBackgroundViewController, new TopBarController(), onClickListener, null);
-        uut = new TopBar(activity, new TopBarButtonCreatorMock(), new TitleBarReactViewCreatorMock(), topBarBackgroundViewController, onClickListener, parent);
+        StackLayout parent = new StackLayout(activity, topBarBackgroundViewController, new TopBarController(), null);
+        uut = new TopBar(activity, topBarBackgroundViewController, parent);
         parent.addView(uut);
     }
 
@@ -55,7 +46,7 @@ public class TopBarBackgroundComponentTest extends BaseTest {
         TopBarBackgroundView background = (TopBarBackgroundView) ViewUtils.findChildrenByClassRecursive(uut, TopBarBackgroundView.class).get(0);
         assertThat(background).isNotNull();
         assertThat(background.getLayoutParams().width).isEqualTo(ViewGroup.LayoutParams.MATCH_PARENT);
-        assertThat(background.getLayoutParams().height).isEqualTo(uut.getHeight());
+        assertThat(background.getLayoutParams().height).isEqualTo(ViewGroup.LayoutParams.MATCH_PARENT);
     }
 
     @Test
@@ -64,7 +55,7 @@ public class TopBarBackgroundComponentTest extends BaseTest {
         component.name = new Text("someComponent");
         component.componentId = new Text("id");
         uut.setBackgroundComponent(component);
-        assertThat(uut.findViewById(R.id.topBarBackgroundComponent)).isNull();
+        assertThat((View) uut.findViewById(R.id.topBarBackgroundComponent)).isNull();
     }
 
     @Test

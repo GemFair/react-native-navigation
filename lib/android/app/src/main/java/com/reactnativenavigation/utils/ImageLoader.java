@@ -18,10 +18,14 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
 
 public class ImageLoader {
 
-    public interface ImageLoadingListener {
+    public interface ImagesLoadingListener {
+        void onComplete(@NonNull List<Drawable> drawable);
+
         void onComplete(@NonNull Drawable drawable);
 
         void onError(Throwable error);
@@ -29,10 +33,22 @@ public class ImageLoader {
 
     private static final String FILE_SCHEME = "file";
 
-    public void loadIcon(final Context context, final String uri, final ImageLoadingListener listener) {
+    public void loadIcon(Context context, String uri, ImagesLoadingListener listener) {
         try {
-            Drawable drawable = getDrawable(context, uri);
-            listener.onComplete(drawable);
+            listener.onComplete(getDrawable(context, uri));
+        } catch (IOException e) {
+            listener.onError(e);
+        }
+    }
+
+    public void loadIcons(final Context context, List<String> uris, ImagesLoadingListener listener) {
+        try {
+            List<Drawable> drawables = new ArrayList<>();
+            for (String uri : uris) {
+                Drawable drawable = getDrawable(context, uri);
+                drawables.add(drawable);
+            }
+            listener.onComplete(drawables);
         } catch (IOException e) {
             listener.onError(e);
         }

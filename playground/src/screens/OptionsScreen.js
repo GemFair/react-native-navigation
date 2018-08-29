@@ -1,7 +1,7 @@
 const React = require('react');
 const { Component } = require('react');
 
-const { View, Text, Button, Platform } = require('react-native');
+const { View, Text, Button, Platform, StatusBar } = require('react-native');
 
 const { Navigation } = require('react-native-navigation');
 const testIDs = require('../testIDs');
@@ -12,18 +12,31 @@ const CUSTOM_BUTTON = 'customButton';
 const CUSTOM_BUTTON2 = 'customButton2';
 const BUTTON_LEFT = 'buttonLeft';
 const FAB = 'fab';
+const TOPBAR_HEIGHT = 67;
 
 class OptionsScreen extends Component {
+  constructor(props) {
+    super(props);
+    Navigation.events().bindComponent(this);
+  }
+
   static get options() {
     return {
+      statusBar: {
+        style: 'dark',
+        backgroundColor: '#EDEDED'
+      },
       topBar: {
         title: {
           text: 'Static Title',
+          _height: TOPBAR_HEIGHT,
           color: 'black',
           fontSize: 16,
           alignment: 'center',
-          fontFamily: 'HelveticaNeue-Italic',
-          largeTitle: false
+          fontFamily: 'HelveticaNeue-Italic'
+        },
+        largeTitle: {
+          visible: false
         },
         subtitle: {
           text: 'Static Subtitle',
@@ -43,8 +56,11 @@ class OptionsScreen extends Component {
           android: { drawBehind: true },
           ios: { drawBehind: false, }
         }),
+        _height: TOPBAR_HEIGHT,
         visible: true,
         testID: testIDs.TOP_BAR_ELEMENT,
+        borderColor: 'red',
+        borderHeight: 1,
         rightButtons: [
           // {
           //   id: CUSTOM_BUTTON,
@@ -55,24 +71,28 @@ class OptionsScreen extends Component {
             id: CUSTOM_BUTTON2,
             testID: CUSTOM_BUTTON2,
             component: {
-              name: 'CustomRoundedButton'
+              name: 'CustomRoundedButton',
+              passProps: {
+                title: 'Two'
+              }
             }
           },
           {
             id: BUTTON_ONE,
             testID: BUTTON_ONE,
-            title: 'One',
-            buttonFontSize: 28,
-            buttonColor: 'red'
+            text: 'One',
+            fontFamily: 'HelveticaNeue-Italic',
+            fontSize: 28,
+            color: 'red'
           }
         ],
-        leftButtons: [{
+        leftButtons: {
           id: BUTTON_LEFT,
           testID: BUTTON_LEFT,
           icon: require('../../img/navicon_add.png'),
-          title: 'Left',
-          buttonColor: 'purple'
-        }]
+          text: 'Left',
+          color: 'purple'
+        }
       },
       fab: {
         id: FAB,
@@ -102,7 +122,7 @@ class OptionsScreen extends Component {
   render() {
     return (
       <View style={styles.root}>
-        <View style={{width: 2, height: 2, backgroundColor: 'red', alignSelf: 'center'}}/>
+        <View style={{ width: 2, height: 2, backgroundColor: 'red', alignSelf: 'center' }} />
         <Text style={styles.h1} testID={testIDs.OPTIONS_SCREEN_HEADER}>{`Options Screen`}</Text>
         <Button title='Dynamic Options' testID={testIDs.DYNAMIC_OPTIONS_BUTTON} onPress={this.onClickDynamicOptions} />
         <Button title='Show Top Bar' testID={testIDs.SHOW_TOP_BAR_BUTTON} onPress={this.onClickShowTopBar} />
@@ -110,70 +130,72 @@ class OptionsScreen extends Component {
         <Button title='Top Bar Transparent' onPress={this.onClickTopBarTransparent} />
         <Button title='Top Bar Opaque' onPress={this.onClickTopBarOpaque} />
         <Button title='scrollView Screen' testID={testIDs.SCROLLVIEW_SCREEN_BUTTON} onPress={this.onClickScrollViewScreen} />
-        <Button title='Custom Transition' testID={testIDs.CUSTOM_TRANSITION_BUTTON} onPress={this.onClickCustomTranstition} />
-        {Platform.OS === 'android' ? <Button title='Hide fab' testID={testIDs.HIDE_FAB} onPress={this.onClickFab} /> : null}
+        <Button title='Custom Transition' testID={testIDs.CUSTOM_TRANSITION_BUTTON} onPress={this.onClickCustomTransition} />
+        {Platform.OS === 'android' && <Button title='Hide fab' testID={testIDs.HIDE_FAB} onPress={this.onClickFab} />}
         <Button title='Show overlay' testID={testIDs.SHOW_OVERLAY_BUTTON} onPress={() => this.onClickShowOverlay(true)} />
         <Button title='Show touch through overlay' testID={testIDs.SHOW_TOUCH_THROUGH_OVERLAY_BUTTON} onPress={() => this.onClickShowOverlay(false)} />
         <Button title='Push Default Options Screen' testID={testIDs.PUSH_DEFAULT_OPTIONS_BUTTON} onPress={this.onClickPushDefaultOptionsScreen} />
         <Button title='Show TopBar react view' testID={testIDs.SHOW_TOPBAR_REACT_VIEW} onPress={this.onShowTopBarReactView} />
-        {Platform.OS === 'android' ? <Button title='Push' testID={testIDs.PUSH_BUTTON} onPress={this.onPush} /> : null}
+        {Platform.OS === 'android' && <Button title='Push' testID={testIDs.PUSH_BUTTON} onPress={this.onPush} />}
+        <Button title='Show Yellow Box' testID={testIDs.SHOW_YELLOW_BOX} onPress={() => console.warn('Yellow Box')} />
         <Text style={styles.footer}>{`this.props.containerId = ${this.props.containerId}`}</Text>
       </View>
     );
   }
 
-  onNavigationButtonPressed(id) {
-    if (id === BUTTON_ONE) {
-      Navigation.setOptions(this.props.componentId, {
+  navigationButtonPressed({buttonId}) {
+    if (buttonId === BUTTON_ONE) {
+      Navigation.mergeOptions(this.props.componentId, {
         topBar: {
           rightButtons: [{
             id: BUTTON_TWO,
             testID: BUTTON_TWO,
-            title: 'Two',
+            text: 'Two',
             icon: require('../../img/navicon_add.png'),
             disableIconTint: true,
             showAsAction: 'ifRoom',
-            buttonColor: 'green',
-            buttonFontSize: 28,
-            buttonFontWeight: '800'
+            color: 'green',
+            fontSize: 28,
+            fontWeight: '800'
           }],
           leftButtons: []
         }
       });
-    } else if (id === BUTTON_TWO) {
-      Navigation.setOptions(this.props.componentId, {
+    } else if (buttonId === BUTTON_TWO) {
+      Navigation.mergeOptions(this.props.componentId, {
         topBar: {
           rightButtons: [{
             id: BUTTON_ONE,
             testID: BUTTON_ONE,
-            title: 'One',
-            buttonColor: 'red'
+            text: 'One',
+            color: 'red'
           }],
           leftButtons: [{
             id: BUTTON_LEFT,
             testID: BUTTON_LEFT,
             icon: require('../../img/navicon_add.png'),
-            title: 'Left',
-            buttonColor: 'purple'
+            text: 'Left',
+            color: 'purple'
           }]
         }
       });
-    } else if (id === BUTTON_LEFT) {
+    } else if (buttonId === BUTTON_LEFT) {
       Navigation.pop(this.props.componentId);
     }
   }
 
   onClickDynamicOptions = () => {
-    Navigation.setOptions(this.props.componentId, {
+    Navigation.mergeOptions(this.props.componentId, {
       topBar: {
         title: {
           text: 'Dynamic Title',
           color: '#00FFFF',
-          largeTitle: false,
           fontSize: 20,
           fontFamily: 'HelveticaNeue-CondensedBold'
         },
-        buttonColor: 'red',
+        largeTitle: {
+          visible: false
+        }
       }
     });
   }
@@ -186,7 +208,7 @@ class OptionsScreen extends Component {
     });
   }
 
-  onClickCustomTranstition = () => {
+  onClickCustomTransition = () => {
     Navigation.push(this.props.componentId, {
       component: {
         name: 'navigation.playground.CustomTransitionOrigin'
@@ -195,7 +217,7 @@ class OptionsScreen extends Component {
   }
 
   onClickTopBarTransparent = () => {
-    Navigation.setOptions(this.props.componentId, {
+    Navigation.mergeOptions(this.props.componentId, {
       topBar: {
         transparent: true
       }
@@ -203,7 +225,7 @@ class OptionsScreen extends Component {
   }
 
   onClickTopBarOpaque = () => {
-    Navigation.setOptions(this.props.componentId, {
+    Navigation.mergeOptions(this.props.componentId, {
       topBar: {
         transparent: false
       }
@@ -211,7 +233,7 @@ class OptionsScreen extends Component {
   }
 
   onClickShowTopBar = () => {
-    Navigation.setOptions(this.props.componentId, {
+    Navigation.mergeOptions(this.props.componentId, {
       topBar: {
         visible: true,
         animate: true
@@ -220,7 +242,7 @@ class OptionsScreen extends Component {
   }
 
   onClickHideTopBar = () => {
-    Navigation.setOptions(this.props.componentId, {
+    Navigation.mergeOptions(this.props.componentId, {
       topBar: {
         visible: false,
         animate: true
@@ -229,7 +251,7 @@ class OptionsScreen extends Component {
   }
 
   onClickFab = () => {
-    Navigation.setOptions(this.props.componentId, {
+    Navigation.mergeOptions(this.props.componentId, {
       fab: {
         id: FAB,
         visible: false
@@ -238,8 +260,8 @@ class OptionsScreen extends Component {
     });
   }
 
-  onClickShowOverlay = (interceptTouchOutside) => {
-    Navigation.showOverlay({
+  onClickShowOverlay = async (interceptTouchOutside) => {
+    await Navigation.showOverlay({
       component: {
         name: 'navigation.playground.CustomDialog',
         options: {
@@ -267,7 +289,7 @@ class OptionsScreen extends Component {
   }
 
   onShowTopBarReactView = () => {
-    Navigation.setOptions(this.props.componentId, {
+    Navigation.mergeOptions(this.props.componentId, {
       topBar: {
         title: {
           component: {

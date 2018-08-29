@@ -1,60 +1,42 @@
 import * as React from 'react';
 import * as  _ from 'lodash';
+import * as ReactLifecyclesCompat from 'react-lifecycles-compat';
 
 export class ComponentWrapper {
 
-  static wrap(componentName: string, OriginalComponentClass: React.ComponentType<any>, store): React.ComponentType<any> {
+  static wrap(
+    componentName: string,
+    OriginalComponentClass: React.ComponentType<any>,
+    store,
+    componentEventsObserver,
+    ReduxProvider?,
+    reduxStore?): React.ComponentType<any> {
 
     class WrappedComponent extends React.Component<any, { componentId: string; allProps: {}; }> {
 
-      private originalComponentRef;
+      static getDerivedStateFromProps(nextProps, prevState) {
+        return {
+          allProps: _.merge({}, nextProps, store.getPropsForId(prevState.componentId))
+        };
+      }
 
       constructor(props) {
         super(props);
         this._assertComponentId();
-        this._saveComponentRef = this._saveComponentRef.bind(this);
         this.state = {
           componentId: props.componentId,
-          allProps: _.merge({}, props, store.getPropsForId(props.componentId))
+          allProps: {}
         };
-      }
-
-      componentWillMount() {
-        store.setRefForId(this.state.componentId, this);
       }
 
       componentWillUnmount() {
         store.cleanId(this.state.componentId);
-      }
-
-      componentDidAppear() {
-        if (this.originalComponentRef.componentDidAppear) {
-          this.originalComponentRef.componentDidAppear();
-        }
-      }
-
-      componentDidDisappear() {
-        if (this.originalComponentRef.componentDidDisappear) {
-          this.originalComponentRef.componentDidDisappear();
-        }
-      }
-
-      onNavigationButtonPressed(buttonId) {
-        if (this.originalComponentRef.onNavigationButtonPressed) {
-          this.originalComponentRef.onNavigationButtonPressed(buttonId);
-        }
-      }
-
-      componentWillReceiveProps(nextProps) {
-        this.setState({
-          allProps: _.merge({}, nextProps, store.getPropsForId(this.state.componentId))
-        });
+        componentEventsObserver.unmounted(this.state.componentId);
       }
 
       render() {
         return (
           <OriginalComponentClass
-            ref={this._saveComponentRef}
             {...this.state.allProps}
             componentId={this.state.componentId}
             key={this.state.componentId}
@@ -67,12 +49,29 @@ export class ComponentWrapper {
           throw new Error(`Component ${componentName} does not have a componentId!`);
         }
       }
-
-      private _saveComponentRef(r) {
-        this.originalComponentRef = r;
-      }
     }
 
-    return WrappedComponent;
+    ReactLifecyclesCompat.polyfill(WrappedComponent);
+    require('hoist-non-react-statics')(WrappedComponent, OriginalComponentClass);
+
+    if (reduxStore) {
+      return ComponentWrapper.wrapWithRedux(WrappedComponent, ReduxProvider, reduxStore);
+    } else {
+      return WrappedComponent;
+    }
+  }
+
+  static wrapWithRedux(WrappedComponent, ReduxProvider, reduxStore): React.ComponentType<any> {
+    class ReduxWrapper extends React.Component<any, any> {
+      render() {
+        return (
+          <ReduxProvider store={reduxStore}>
+            <WrappedComponent {...this.props} />
+          </ReduxProvider>
+        );
+      }
+    }
+    require('hoist-non-react-statics')(ReduxWrapper, WrappedComponent);
+    return ReduxWrapper;
   }
 }

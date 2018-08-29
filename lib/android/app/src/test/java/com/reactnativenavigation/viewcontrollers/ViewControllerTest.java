@@ -2,22 +2,24 @@ package com.reactnativenavigation.viewcontrollers;
 
 import android.app.Activity;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.ViewParent;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 
 import com.reactnativenavigation.BaseTest;
+import com.reactnativenavigation.TestUtils;
 import com.reactnativenavigation.mocks.SimpleViewController;
-import com.reactnativenavigation.mocks.TitleBarReactViewCreatorMock;
-import com.reactnativenavigation.mocks.TopBarBackgroundViewCreatorMock;
-import com.reactnativenavigation.mocks.TopBarButtonCreatorMock;
 import com.reactnativenavigation.parse.Options;
+import com.reactnativenavigation.parse.params.Bool;
+import com.reactnativenavigation.parse.params.NullBool;
 import com.reactnativenavigation.utils.CommandListenerAdapter;
-import com.reactnativenavigation.viewcontrollers.topbar.TopBarBackgroundViewController;
-import com.reactnativenavigation.viewcontrollers.topbar.TopBarController;
+import com.reactnativenavigation.viewcontrollers.stack.StackController;
+import com.reactnativenavigation.views.Component;
 
 import org.assertj.android.api.Assertions;
 import org.junit.Test;
+import org.mockito.Mockito;
 import org.robolectric.Shadows;
 
 import java.lang.reflect.Field;
@@ -27,17 +29,23 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.withSettings;
 
 public class ViewControllerTest extends BaseTest {
 
     private ViewController uut;
     private Activity activity;
+    private ChildControllersRegistry childRegistry;
+    private YellowBoxDelegate yellowBoxDelegate;
 
     @Override
     public void beforeEach() {
         super.beforeEach();
+        yellowBoxDelegate = Mockito.mock(YellowBoxDelegate.class);
         activity = newActivity();
-        uut = new SimpleViewController(activity, "uut", new Options());
+        childRegistry = new ChildControllersRegistry();
+        uut = new SimpleViewController(activity, childRegistry, "uut", new Options());
+        uut.setParentController(mock(ParentController.class));
     }
 
     @Test
@@ -53,7 +61,8 @@ public class ViewControllerTest extends BaseTest {
     @Test
     public void canOverrideViewCreation() {
         final FrameLayout otherView = new FrameLayout(activity);
-        ViewController myController = new ViewController(activity, "vc", new Options()) {
+        yellowBoxDelegate = spy(new YellowBoxDelegate());
+        ViewController myController = new ViewController(activity, "vc", yellowBoxDelegate, new Options()) {
             @Override
             protected FrameLayout createView() {
                 return otherView;
@@ -67,17 +76,21 @@ public class ViewControllerTest extends BaseTest {
         assertThat(myController.getView()).isEqualTo(otherView);
     }
 
+    @SuppressWarnings("ConstantConditions")
     @Test
     public void holdsAReferenceToStackControllerOrNull() {
+        uut.setParentController(null);
+
         assertThat(uut.getParentController()).isNull();
-        StackController nav = new StackController(activity, new TopBarButtonCreatorMock(), new TitleBarReactViewCreatorMock(), new TopBarBackgroundViewController(activity, new TopBarBackgroundViewCreatorMock()), new TopBarController(), "stack", new Options());
+        StackController nav = TestUtils.newStackController(activity).build();
+        nav.ensureViewIsCreated();
         nav.push(uut, new CommandListenerAdapter());
         assertThat(uut.getParentController()).isEqualTo(nav);
     }
 
     @Test
     public void handleBackDefaultFalse() {
-        assertThat(uut.handleBack()).isFalse();
+        assertThat(uut.handleBack(new CommandListenerAdapter())).isFalse();
     }
 
     @Test
@@ -96,6 +109,25 @@ public class ViewControllerTest extends BaseTest {
     public void findControllerById_SelfOrNull() {
         assertThat(uut.findControllerById("456")).isNull();
         assertThat(uut.findControllerById("uut")).isEqualTo(uut);
+    }
+
+    @Test
+    public void onChildViewAdded_delegatesToYellowBoxDelegate() {
+        View child = new View(activity);
+        ViewGroup view = new FrameLayout(activity);
+        ViewController vc = new ViewController(activity, "", yellowBoxDelegate, new Options()) {
+            @Override
+            protected ViewGroup createView() {
+                return view;
+            }
+
+            @Override
+            public void sendOnNavigationButtonPressed(String buttonId) {
+
+            }
+        };
+        vc.onChildViewAdded(view, child);
+        verify(yellowBoxDelegate).onChildViewAdded(view, child);
     }
 
     @Test
@@ -154,7 +186,7 @@ public class ViewControllerTest extends BaseTest {
 
     @Test
     public void onDestroy_RemovesGlobalLayoutListener() throws Exception {
-        new SimpleViewController(activity, "ensureNotNull", new Options()).destroy();
+        new SimpleViewController(activity, childRegistry, "ensureNotNull", new Options()).destroy();
 
         ViewController spy = spy(uut);
         View view = spy.getView();
@@ -186,6 +218,22 @@ public class ViewControllerTest extends BaseTest {
     }
 
     @Test
+    public void onDestroy_destroysViewEvenIfHidden() {
+        final SimpleViewController.SimpleView[] spy = new SimpleViewController.SimpleView[1];
+        ViewController uut = new SimpleViewController(activity, childRegistry, "uut", new Options()) {
+            @Override
+            protected SimpleView createView() {
+                SimpleView view = spy(super.createView());
+                spy[0] = view;
+                return view;
+            }
+        };
+        assertThat(uut.isViewShown()).isFalse();
+        uut.destroy();
+        verify(spy[0], times(1)).destroy();
+    }
+
+    @Test
     public void onDestroy_RemovesSelfFromParentIfExists() {
         LinearLayout parent = new LinearLayout(activity);
         parent.addView(uut.getView());
@@ -200,6 +248,27 @@ public class ViewControllerTest extends BaseTest {
         verify(spy, times(0)).getView();
         spy.ensureViewIsCreated();
         verify(spy, times(1)).getView();
+    }
+
+    @Test
+    public void isRendered_falseIfViewIsNotCreated() {
+        uut.setWaitForRender(new Bool(true));
+        assertThat(uut.isRendered()).isFalse();
+    }
+
+    @Test
+    public void isRendered_delegatesToView() {
+        uut.setWaitForRender(new Bool(true));
+        uut.view = mock(ViewGroup.class, withSettings().extraInterfaces(Component.class));
+        uut.isRendered();
+        verify((Component) uut.view).isRendered();
+    }
+
+    @Test
+    public void isRendered_returnsTrueForEveryViewByDefault() {
+        uut.setWaitForRender(new NullBool());
+        uut.view = mock(ViewGroup.class);
+        assertThat(uut.isRendered()).isTrue();
     }
 }
 

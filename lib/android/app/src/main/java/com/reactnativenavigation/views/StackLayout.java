@@ -4,52 +4,43 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.widget.RelativeLayout;
 
-import com.reactnativenavigation.parse.Options;
-import com.reactnativenavigation.presentation.OptionsPresenter;
-import com.reactnativenavigation.viewcontrollers.ReactViewCreator;
-import com.reactnativenavigation.viewcontrollers.TopBarButtonController;
-import com.reactnativenavigation.viewcontrollers.ViewController;
 import com.reactnativenavigation.viewcontrollers.topbar.TopBarBackgroundViewController;
 import com.reactnativenavigation.viewcontrollers.topbar.TopBarController;
-import com.reactnativenavigation.views.titlebar.TitleBarReactViewCreator;
-
-import static android.view.ViewGroup.LayoutParams.MATCH_PARENT;
-import static android.view.ViewGroup.LayoutParams.WRAP_CONTENT;
+import com.reactnativenavigation.views.topbar.TopBar;
 
 @SuppressLint("ViewConstructor")
-public class StackLayout extends RelativeLayout {
+public class StackLayout extends RelativeLayout implements Component {
     private String stackId;
-    private final OptionsPresenter optionsPresenter;
 
-    public StackLayout(Context context, ReactViewCreator topBarButtonCreator, TitleBarReactViewCreator titleBarReactViewCreator, TopBarBackgroundViewController topBarBackgroundViewController, TopBarController topBarController, TopBarButtonController.OnClickListener topBarButtonClickListener, String stackId) {
+    public StackLayout(Context context, TopBarBackgroundViewController topBarBackgroundViewController, TopBarController topBarController, String stackId) {
         super(context);
         this.stackId = stackId;
-        createLayout(topBarButtonCreator, titleBarReactViewCreator, topBarBackgroundViewController, topBarController, topBarButtonClickListener);
-        optionsPresenter = new OptionsPresenter(topBarController.getView());
+        createLayout(topBarBackgroundViewController, topBarController);
         setContentDescription("StackLayout");
     }
 
-    private void createLayout(ReactViewCreator buttonCreator, TitleBarReactViewCreator titleBarReactViewCreator, TopBarBackgroundViewController topBarBackgroundViewController, TopBarController topBarController, TopBarButtonController.OnClickListener topBarButtonClickListener) {
-        addView(topBarController.createView(getContext(), buttonCreator, titleBarReactViewCreator, topBarBackgroundViewController, topBarButtonClickListener, this), MATCH_PARENT, WRAP_CONTENT);
-    }
-
-    public void applyChildOptions(Options options) {
-        optionsPresenter.applyOrientation(options.orientationOptions);
-    }
-
-    public void applyChildOptions(Options options, Component child) {
-        optionsPresenter.applyChildOptions(options, child);
-    }
-
-    public void onChildWillAppear(ViewController appearing, ViewController disappearing) {
-        optionsPresenter.onChildWillAppear(appearing.options, disappearing.options);
-    }
-
-    public void mergeChildOptions(Options options, Component child) {
-        optionsPresenter.mergeChildOptions(options, child);
+    private void createLayout(TopBarBackgroundViewController topBarBackgroundViewController, TopBarController topBarController) {
+        addView(topBarController.createView(getContext(), topBarBackgroundViewController, this));
     }
 
     public String getStackId() {
         return stackId;
+    }
+
+    @Override
+    public void drawBehindTopBar() {
+
+    }
+
+    @Override
+    public void drawBelowTopBar(TopBar topBar) {
+
+    }
+
+    @Override
+    public boolean isRendered() {
+        return getChildCount() >= 2 &&
+               getChildAt(1) instanceof Component &&
+               ((Component) getChildAt(1)).isRendered();
     }
 }

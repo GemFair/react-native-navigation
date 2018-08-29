@@ -14,4 +14,12 @@
 
 -(void)sendOnNavigationButtonPressed:(NSString*)componentId buttonId:(NSString*)buttonId;
 
+-(void)sendBottomTabSelected:(NSNumber *)selectedTabIndex unselected:(NSNumber*)unselectedTabIndex;
+
+-(void)sendOnNavigationCommandCompletion:(NSString *)commandName params:(NSDictionary*)params;
+
+-(void)sendOnSearchBarUpdated:(NSString *)componentId text:(NSString*)text isFocused:(BOOL)isFocused;
+
+-(void)sendOnSearchBarCancelPressed:(NSString *)componentId;
+
 @end

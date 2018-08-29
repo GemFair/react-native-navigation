@@ -33,7 +33,7 @@ class TopTabOptionsScreen extends PureComponent {
   }
 
   onClickDynamicOptions() {
-    Navigation.setOptions(this.props.componentId, {
+    Navigation.mergeOptions(this.props.componentId, {
       topBar: {
         title: {
           text: 'Dynamic Title',
@@ -41,7 +41,9 @@ class TopTabOptionsScreen extends PureComponent {
           fontSize: 16,
           fontFamily: 'HelveticaNeue-CondensedBold'
         },
-        largeTitle: false,
+        largeTitle: {
+          visible: false,
+        },
         buttonColor: 'red',
       }
     });

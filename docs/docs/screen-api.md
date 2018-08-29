@@ -9,22 +9,18 @@ Push a new screen into this screen's navigation stack.
 
 ```js
 Navigation.push(this.props.componentId, {
-  stack: {
-    children: [{
-      component: {
-        name: 'example.PushedScreen',
-        passProps: {
-          text: 'Pushed screen'
-        },
-        options: {
-          topBar: {
-            title: {
-              text: 'Pushed screen title'
-            }
-          }
+  component: {
+    name: 'example.PushedScreen',
+    passProps: {
+      text: 'Pushed screen'
+    },
+    options: {
+      topBar: {
+        title: {
+          text: 'Pushed screen title'
         }
       }
-    }]
+    }
   }
 });
 ```
@@ -44,6 +40,13 @@ Pop all the screens until the root from this screen's navigation stack.
 ```js
 Navigation.popToRoot(this.props.componentId);
 ```
+## popTo(componentId)
+
+Pop the stack to a given component.
+
+```js
+Navigation.popTo(componentId);
+```
 
 ## setStackRoot(componentId, params)
 
@@ -57,7 +60,11 @@ Navigation.setStackRoot(this.props.componentId, {
           text: 'Root screen'
         },
         options: {
-          animated: true // Will animate root change same as push
+          animations: {
+            setStackRoot: {
+              enable: true
+            }
+          }
         }
       }
 });
@@ -121,12 +128,15 @@ this.props.navigator.handleDeepLink({
   Navigation.handleDeepLink(...);
 ``` -->
 
-## setOptions(componentId, options = {})
+## mergeOptions(componentId, options = {})
 
 Set options dynamically for component.
 
+WARNING! this is called after the component has been rendered at least once.
+If you want the options to apply as soon as the screen is created, use `static options(passProps){...}` or pass the options as part of the push/modal etc command.
+
 ```js
-Navigation.setOptions(this.props.componentId, {
+Navigation.mergeOptions(this.props.componentId, {
   topBar: {
     visible: true,
     title: {

@@ -3,9 +3,8 @@ package com.reactnativenavigation.parse;
 import android.support.annotation.CheckResult;
 import android.support.annotation.NonNull;
 
-import com.reactnativenavigation.parse.params.Color;
-import com.reactnativenavigation.parse.params.NullColor;
-import com.reactnativenavigation.parse.parsers.ColorParser;
+import com.reactnativenavigation.parse.params.NullNumber;
+import com.reactnativenavigation.parse.params.NullText;
 import com.reactnativenavigation.utils.TypefaceLoader;
 
 import org.json.JSONObject;
@@ -14,32 +13,28 @@ public class Options {
 
     @NonNull
     public static Options parse(TypefaceLoader typefaceManager, JSONObject json) {
-        return parse(typefaceManager, json, new Options());
-    }
-
-    @NonNull
-    public static Options parse(TypefaceLoader typefaceManager, JSONObject json, @NonNull Options defaultOptions) {
         Options result = new Options();
-        if (json == null) return result.withDefaultOptions(defaultOptions);
+        if (json == null) return result;
 
-        result.orientationOptions = OrientationOptions.parse(json);
         result.topBar = TopBarOptions.parse(typefaceManager, json.optJSONObject("topBar"));
-        result.topTabsOptions = TopTabsOptions.parse(json.optJSONObject("topTabs"));
+        result.topTabs = TopTabsOptions.parse(json.optJSONObject("topTabs"));
         result.topTabOptions = TopTabOptions.parse(typefaceManager, json.optJSONObject("topTab"));
-        result.bottomTabOptions = BottomTabOptions.parse(json.optJSONObject("bottomTab"));
+        result.bottomTabOptions = BottomTabOptions.parse(typefaceManager, json.optJSONObject("bottomTab"));
         result.bottomTabsOptions = BottomTabsOptions.parse(json.optJSONObject("bottomTabs"));
         result.overlayOptions = OverlayOptions.parse(json.optJSONObject("overlay"));
         result.fabOptions = FabOptions.parse(json.optJSONObject("fab"));
         result.sideMenuRootOptions = SideMenuRootOptions.parse(json.optJSONObject("sideMenu"));
         result.animations = AnimationsOptions.parse(json.optJSONObject("animations"));
-        result.screenBackgroundColor = ColorParser.parse(json, "screenBackgroundColor");
+        result.modal = ModalOptions.parse(json);
+        result.statusBar = StatusBarOptions.parse(json.optJSONObject("statusBar"));
+        result.layout = LayoutOptions.parse(json.optJSONObject("layout"));
+        result.transitions = Transitions.parse(json.optJSONObject("customTransition"));
 
-        return result.withDefaultOptions(defaultOptions);
+        return result;
     }
 
-    @NonNull public OrientationOptions orientationOptions = new OrientationOptions();
     @NonNull public TopBarOptions topBar = new TopBarOptions();
-    @NonNull public TopTabsOptions topTabsOptions = new TopTabsOptions();
+    @NonNull public TopTabsOptions topTabs = new TopTabsOptions();
     @NonNull public TopTabOptions topTabOptions = new TopTabOptions();
     @NonNull public BottomTabOptions bottomTabOptions = new BottomTabOptions();
     @NonNull public BottomTabsOptions bottomTabsOptions = new BottomTabsOptions();
@@ -47,7 +42,10 @@ public class Options {
     @NonNull public FabOptions fabOptions = new FabOptions();
     @NonNull public AnimationsOptions animations = new AnimationsOptions();
     @NonNull public SideMenuRootOptions sideMenuRootOptions = new SideMenuRootOptions();
-    @NonNull public Color screenBackgroundColor = new NullColor();
+    @NonNull public ModalOptions modal = new ModalOptions();
+    @NonNull public StatusBarOptions statusBar = new StatusBarOptions();
+    @NonNull public LayoutOptions layout = new LayoutOptions();
+    @NonNull public Transitions transitions = new Transitions();
 
     void setTopTabIndex(int i) {
         topTabOptions.tabIndex = i;
@@ -56,9 +54,8 @@ public class Options {
     @CheckResult
     public Options copy() {
         Options result = new Options();
-        result.orientationOptions.mergeWith(orientationOptions);
         result.topBar.mergeWith(topBar);
-        result.topTabsOptions.mergeWith(topTabsOptions);
+        result.topTabs.mergeWith(topTabs);
         result.topTabOptions.mergeWith(topTabOptions);
         result.bottomTabOptions.mergeWith(bottomTabOptions);
         result.bottomTabsOptions.mergeWith(bottomTabsOptions);
@@ -66,37 +63,44 @@ public class Options {
         result.fabOptions.mergeWith(fabOptions);
         result.sideMenuRootOptions.mergeWith(sideMenuRootOptions);
         result.animations.mergeWith(animations);
-        result.screenBackgroundColor = screenBackgroundColor;
+        result.modal.mergeWith(modal);
+        result.statusBar.mergeWith(statusBar);
+        result.layout.mergeWith(layout);
+        result.transitions.mergeWith(transitions);
         return result;
     }
 
     @CheckResult
 	public Options mergeWith(final Options other) {
         Options result = copy();
-        result.orientationOptions.mergeWith(other.orientationOptions);
         result.topBar.mergeWith(other.topBar);
-        result.topTabsOptions.mergeWith(other.topTabsOptions);
+        result.topTabs.mergeWith(other.topTabs);
         result.topTabOptions.mergeWith(other.topTabOptions);
         result.bottomTabOptions.mergeWith(other.bottomTabOptions);
         result.bottomTabsOptions.mergeWith(other.bottomTabsOptions);
         result.fabOptions.mergeWith(other.fabOptions);
         result.animations.mergeWith(other.animations);
         result.sideMenuRootOptions.mergeWith(other.sideMenuRootOptions);
-        if (other.screenBackgroundColor.hasValue()) result.screenBackgroundColor = other.screenBackgroundColor;
+        result.modal.mergeWith(other.modal);
+        result.statusBar.mergeWith(other.statusBar);
+        result.layout.mergeWith(other.layout);
+        result.transitions.mergeWith(transitions);
         return result;
     }
 
-    Options withDefaultOptions(final Options defaultOptions) {
-        orientationOptions.mergeWithDefault(defaultOptions.orientationOptions);
+    public Options withDefaultOptions(final Options defaultOptions) {
         topBar.mergeWithDefault(defaultOptions.topBar);
         topTabOptions.mergeWithDefault(defaultOptions.topTabOptions);
-        topTabsOptions.mergeWithDefault(defaultOptions.topTabsOptions);
+        topTabs.mergeWithDefault(defaultOptions.topTabs);
         bottomTabOptions.mergeWithDefault(defaultOptions.bottomTabOptions);
         bottomTabsOptions.mergeWithDefault(defaultOptions.bottomTabsOptions);
         fabOptions.mergeWithDefault(defaultOptions.fabOptions);
         animations.mergeWithDefault(defaultOptions.animations);
         sideMenuRootOptions.mergeWithDefault(defaultOptions.sideMenuRootOptions);
-        if (!screenBackgroundColor.hasValue()) screenBackgroundColor = defaultOptions.screenBackgroundColor;
+        modal.mergeWithDefault(defaultOptions.modal);
+        statusBar.mergeWithDefault(defaultOptions.statusBar);
+        layout.mergeWithDefault(defaultOptions.layout);
+        transitions.mergeWithDefault(defaultOptions.transitions);
         return this;
     }
 
@@ -116,7 +120,7 @@ public class Options {
     }
 
     public Options clearTopTabsOptions() {
-        topTabsOptions = new TopTabsOptions();
+        topTabs = new TopTabsOptions();
         return this;
     }
 
@@ -137,6 +141,12 @@ public class Options {
 
     public Options clearFabOptions() {
         fabOptions = new FabOptions();
+        return this;
+    }
+
+    public Options clearOneTimeOptions() {
+        bottomTabsOptions.currentTabId = new NullText();
+        bottomTabsOptions.currentTabIndex = new NullNumber();
         return this;
     }
 }
